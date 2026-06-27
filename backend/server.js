@@ -73,14 +73,17 @@ async function getOrCreateFolder(drive, parentId, name) {
     const res = await drive.files.list({
       q: `name='${safe}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
       fields: 'files(id)',
-      spaces: 'drive'
+      spaces: 'drive',
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true
     });
     if (res.data.files.length > 0) return res.data.files[0].id;
   } catch (_) { /* fall through to create */ }
 
   const folder = await drive.files.create({
     requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] },
-    fields: 'id'
+    fields: 'id',
+    supportsAllDrives: true
   });
   return folder.data.id;
 }
@@ -89,7 +92,9 @@ async function fileExists(drive, folderId, fileName) {
   const safe = fileName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const res = await drive.files.list({
     q: `name='${safe}' and '${folderId}' in parents and trashed=false`,
-    fields: 'files(id)'
+    fields: 'files(id)',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true
   });
   return res.data.files.length > 0;
 }
@@ -167,7 +172,8 @@ app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
         mimeType: 'application/pdf',
         body:     bufferToStream(pdfBuffer)
       },
-      fields: 'id, webViewLink'
+      fields: 'id, webViewLink',
+      supportsAllDrives: true
     });
 
     const fileId    = uploaded.data.id;
@@ -176,7 +182,8 @@ app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
     // Make readable by anyone with link
     await drive.permissions.create({
       fileId,
-      requestBody: { role: 'reader', type: 'anyone' }
+      requestBody: { role: 'reader', type: 'anyone' },
+      supportsAllDrives: true
     }).catch(err => console.warn('Permission grant warning:', err.message));
 
     // Telegram notification (fire-and-forget)
