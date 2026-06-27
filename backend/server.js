@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
@@ -57,6 +57,9 @@ async function initDrive() {
   const saRaw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!saRaw) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON env var not set');
   const credentials = JSON.parse(saRaw);
+  if (credentials.private_key) {
+    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+  }
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/drive']
