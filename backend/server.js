@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// â”€â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CORS ───────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
@@ -28,13 +28,13 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Multer â€“ memory storage (required for Vercel serverless)
+// Multer – memory storage (required for Vercel serverless)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 30 * 1024 * 1024 } // 30 MB
 });
 
-// â”€â”€â”€ GOOGLE DRIVE HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── GOOGLE DRIVE HELPERS ───────────────────────────────────────────────────
 
 function bufferToStream(buffer) {
   const stream = new Readable();
@@ -106,13 +106,13 @@ async function sendTelegram(message) {
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', disable_web_page_preview: false })
+    body: JSON.stringify({ chat_id: chatId, text: message, disable_web_page_preview: false })
   });
   const data = await res.json();
   if (!data.ok) console.error('Telegram error:', data.description);
 }
 
-// â”€â”€â”€ HEALTH CHECK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── HEALTH CHECK ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -123,20 +123,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// â”€â”€â”€ FINALIZE & SAVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── FINALIZE & SAVE ────────────────────────────────────────────────────────
 app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
   try {
     const { company, refNumber, clientOrSubject, documentType, userEmail } = req.body;
     const pdfBuffer = req.file?.buffer;
 
-    if (!pdfBuffer)           return res.status(400).json({ error: 'ظ„ظ… ظٹطھظ… ط¥ط±ظپط§ظ‚ ظ…ظ„ظپ PDF.' });
-    if (!company)             return res.status(400).json({ error: 'ط§ط³ظ… ط§ظ„ط´ط±ظƒط© ظ…ط·ظ„ظˆط¨.' });
-    if (!refNumber)           return res.status(400).json({ error: 'ط§ظ„ط±ظ‚ظ… ط§ظ„ظ…ط±ط¬ط¹ظٹ ظ…ط·ظ„ظˆط¨.' });
-    if (!documentType)        return res.status(400).json({ error: 'ظ†ظˆط¹ ط§ظ„ظˆط«ظٹظ‚ط© ظ…ط·ظ„ظˆط¨.' });
+    if (!pdfBuffer)           return res.status(400).json({ error: 'لم يتم إرفاق ملف PDF.' });
+    if (!company)             return res.status(400).json({ error: 'اسم الشركة مطلوب.' });
+    if (!refNumber)           return res.status(400).json({ error: 'الرقم المرجعي مطلوب.' });
+    if (!documentType)        return res.status(400).json({ error: 'نوع الوثيقة مطلوب.' });
 
     const isPetro = company === 'Petro South';
     const rootId  = isPetro ? process.env.PETRO_SOUTH_DRIVE_FOLDER_ID : process.env.MBTKRON_DRIVE_FOLDER_ID;
-    if (!rootId) return res.status(500).json({ error: `ظ…ط¬ظ„ط¯ Drive ط؛ظٹط± ظ…ط¹ط±ظژظ‘ظپ ظ„ظ„ط´ط±ظƒط©: ${company}` });
+    if (!rootId) return res.status(500).json({ error: `مجلد Drive غير معرَّف للشركة: ${company}` });
 
     // Build folder path: [Root]/[YYYY]/[MM]/[Letters|Quotations]
     const now        = new Date();
@@ -157,7 +157,7 @@ app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
     if (await fileExists(drive, typeFolderId, fileName)) {
       return res.status(409).json({
         duplicate: true,
-        error: `ط§ظ„ظ…ظ„ظپ "${fileName}" ظ…ظˆط¬ظˆط¯ ظ…ط³ط¨ظ‚ط§ظ‹ ظپظٹ ط§ظ„ط£ط±ط´ظٹظپ ظ„ظ‡ط°ط§ ط§ظ„ط´ظ‡ط±. ظٹظڈط±ط¬ظ‰ طھط¹ط¯ظٹظ„ ط§ظ„ط±ظ‚ظ… ط§ظ„ظ…ط±ط¬ط¹ظٹ ط¥ظ† ظƒط§ظ†طھ ظˆط«ظٹظ‚ط© ظ…ط®طھظ„ظپط©.`
+        error: `الملف "${fileName}" موجود مسبقاً في الأرشيف لهذا الشهر. يُرجى تعديل الرقم المرجعي إن كانت وثيقة مختلفة.`
       });
     }
 
@@ -187,36 +187,37 @@ app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
     }).catch(err => console.warn('Permission grant warning:', err.message));
 
     // Telegram notification (fire-and-forget)
-    const companyLabel = isPetro ? 'ط¨ظٹطھط±ظˆ ط³ط§ظˆط« (Petro South)' : 'ط§ظ„ظ…ط¨طھظƒط±ظˆظ† ط§ظ„ط¹ط±ط¨ (MBTKRON)';
-    const typeLabel    = documentType === 'Letter' ? 'ًں“‌ ط®ط·ط§ط¨ ط±ط³ظ…ظٹ' : 'ًں“ٹ ط¹ط±ط¶ ط³ط¹ط±';
+    const companyLabel = isPetro ? 'بيترو ساوث (Petro South)' : 'المبتكرون العرب (MBTKRON)';
+    const typeLabel    = documentType === 'Letter' ? '📂 خطاب رسمي' : '📊 عرض سعر';
     const dateStr      = now.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Aden' });
 
     const tgMsg = [
-      `ًں“پ <b>طھظ…طھ ط£ط±ط´ظپط© ظˆط«ظٹظ‚ط© ط¬ط¯ظٹط¯ط©</b>`,
+      `📁 تمت أرشفة وثيقة جديدة`,
       ``,
-      `ًںڈ¢ <b>ط§ظ„ط´ط±ظƒط©:</b> ${companyLabel}`,
+      `🏢 الشركة: ${companyLabel}`,
       `${typeLabel}`,
-      `ًں”¢ <b>ط§ظ„ط±ظ‚ظ… ط§ظ„ظ…ط±ط¬ط¹ظٹ:</b> <code>${refNumber}</code>`,
-      `ًں‘¤ <b>ط§ظ„ط¹ظ…ظٹظ„ / ط§ظ„ظ…ط±ط³ظ„ ط¥ظ„ظٹظ‡:</b> ${clientOrSubject || 'ط؛ظٹط± ظ…ط­ط¯ط¯'}`,
-      `ًں“… <b>ط§ظ„طھط§ط±ظٹط®:</b> ${dateStr}`,
-      `âœ‰ï¸ڈ <b>ط±ظڈظپط¹ ط¨ظˆط§ط³ط·ط©:</b> ${userEmail || 'unknown'}`,
+      `🔢 الرقم المرجعي: ${refNumber}`,
+      `👤 العميل / المرسل إليه: ${clientOrSubject || 'غير محدد'}`,
+      `📅 التاريخ: ${dateStr}`,
+      `✉️ رُفع بواسطة: ${userEmail || 'unknown'}`,
       ``,
-      `ًں”— <a href="${driveLink}">ظپطھط­ ط§ظ„ظˆط«ظٹظ‚ط© ظپظٹ Google Drive</a>`
+      `🔗 رابط فتح الوثيقة في Google Drive:`,
+      driveLink
     ].join('\n');
 
     sendTelegram(tgMsg).catch(err => console.error('Telegram failed (non-blocking):', err.message));
 
-    console.log(`[FINALIZE] âœ… ${userEmail} â†’ ${company} â†’ ${year}/${month}/${typeFolder}/${fileName}`);
+    console.log(`[FINALIZE] ✅ ${userEmail} → ${company} → ${year}/${month}/${typeFolder}/${fileName}`);
 
     return res.json({ success: true, fileName, driveLink, fileId, path: `${year}/${month}/${typeFolder}/${fileName}` });
 
   } catch (err) {
-    console.error('[FINALIZE] â‌Œ', err);
-    return res.status(500).json({ error: 'ط­ط¯ط« ط®ط·ط£ ط£ط«ظ†ط§ط، ط±ظپط¹ ط§ظ„ظ…ظ„ظپ ط¥ظ„ظ‰ Google Drive.', details: err.message });
+    console.error('[FINALIZE] ❌', err);
+    return res.status(500).json({ error: 'حدث خطأ أثناء رفع الملف إلى Google Drive.', details: err.message });
   }
 });
 
-// â”€â”€â”€ AI LETTER GENERATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AI LETTER GENERATION ───────────────────────────────────────────────────
 const apiKey = process.env.GEMINI_API_KEY;
 let ai;
 if (apiKey) ai = new GoogleGenerativeAI(apiKey);
@@ -225,36 +226,36 @@ app.post('/api/generate-letter', async (req, res) => {
   const { prompt, company, tone = 'formal', recipient = '', subject = '' } = req.body;
 
   if (!prompt || prompt.trim() === '') {
-    return res.status(400).json({ error: 'ط§ظ„ط±ط¬ط§ط، ط¥ط¯ط®ط§ظ„ ظ…ظˆط¶ظˆط¹ ط§ظ„ط±ط³ط§ظ„ط©.' });
+    return res.status(400).json({ error: 'الرجاء إدخال موضوع الرسالة.' });
   }
   if (!apiKey || !ai) {
-    return res.status(500).json({ error: 'ظ…ظپطھط§ط­ Gemini API ط؛ظٹط± ظ…ط¨ط±ظ…ط¬ ظپظٹ ط§ظ„ط®ط§ط¯ظ….' });
+    return res.status(500).json({ error: 'مفتاح Gemini API غير مبرمج في الخادم.' });
   }
 
   try {
     const companyContext = company === 'Petro South'
-      ? 'ط´ط±ظƒط© ط¨ظٹطھط±ظˆ ط³ط§ظˆط« (Petro South) - ظˆظ‡ظٹ ط´ط±ظƒط© ظ…طھط®طµطµط© ظپظٹ ظ‚ط·ط§ط¹ ط§ظ„ظ†ظپط· ظˆط§ظ„ط؛ط§ط² ظˆط§ظ„ط®ط¯ظ…ط§طھ ط§ظ„ط¨طھط±ظˆظ„ظٹط© ظˆط§ظ„ظ„ظˆط¬ط³طھظٹط©.'
-      : 'ط´ط±ظƒط© ط§ظ„ظ…ط¨طھظƒط±ظˆظ† ط§ظ„ط¹ط±ط¨ (MBTKRON Arab) - ظˆظ‡ظٹ ط´ط±ظƒط© ط±ط§ط¦ط¯ط© ظپظٹ ط§ظ„ظ…ظ‚ط§ظˆظ„ط§طھ ط§ظ„ط¹ط§ظ…ط© ظˆط§ظ„ط®ط¯ظ…ط§طھ ط§ظ„ظ‡ظ†ط¯ط³ظٹط© ظˆط§ظ„ط·ط§ظ‚ط© ط§ظ„ط¨ط¯ظٹظ„ط©.';
+      ? 'شركة بيترو ساوث (Petro South) - وهي شركة متخصصة في قطاع النفط والغاز والخدمات البترولية واللوجستية.'
+      : 'شركة المبتكرون العرب (MBTKRON Arab) - وهي شركة رائدة في المقاولات العامة والخدمات الهندسية والطاقة البديلة.';
 
     const systemPrompt = `
-ط£ظ†طھ ظ…ط³ط§ط¹ط¯ ط°ظƒط§ط، ط§طµط·ظ†ط§ط¹ظٹ ظ…ط­طھط±ظپ ظ…طھط®طµطµ ظپظٹ طµظٹط§ط؛ط© ط§ظ„ط±ط³ط§ط¦ظ„ ظˆط§ظ„ط®ط·ط§ط¨ط§طھ ط§ظ„ط±ط³ظ…ظٹط© ظ„ظ„ط´ط±ظƒط§طھ ط¨ط§ظ„ظ„ط؛ط© ط§ظ„ط¹ط±ط¨ظٹط© ط§ظ„ظپطµط­ظ‰.
-ط³ظٹط§ظ‚ ط§ظ„ط´ط±ظƒط© ط§ظ„ط­ط§ظ„ظٹط©: ${companyContext}
-${recipient ? `ط§ظ„ط¬ظ‡ط© ط§ظ„ظ…ط±ط³ظ„ ط¥ظ„ظٹظ‡ط§: ${recipient}` : ''}
-${subject ? `ظ…ظˆط¶ظˆط¹ ط§ظ„ط®ط·ط§ط¨: ${subject}` : ''}
+أنت مساعد ذكاء اصطناعي محترف متخصص في صياغة الرسائل والخطابات الرسمية للشركات باللغة العربية الفصحى.
+سياق الشركة الحالية: ${companyContext}
+${recipient ? `الجهة المرسل إليها: ${recipient}` : ''}
+${subject ? `موضوع الخطاب: ${subject}` : ''}
 
-ط§ظ„ظ…ط·ظ„ظˆط¨ ظ…ظ†ظƒ:
-ظƒطھط§ط¨ط© ظ†طµ ط§ظ„ط±ط³ط§ظ„ط© ط§ظ„ط£ط³ط§ط³ظٹ (ظ…ط¶ظ…ظˆظ† ط§ظ„ط®ط·ط§ط¨) ط¨ط£ط³ظ„ظˆط¨ ظ…ظ‡ظ†ظٹ ظˆظ…ظ‚ظ†ط¹طŒ ظˆظ…ظƒطھظˆط¨ ط¨ظ„ط؛ط© ط¹ط±ط¨ظٹط© ظپطµط­ظ‰ ط¨ظ„ظٹط؛ط© ظˆط®ط§ظ„ظٹط© طھظ…ط§ظ…ط§ظ‹ ظ…ظ† ط§ظ„ط£ط®ط·ط§ط، ط§ظ„ط¥ظ…ظ„ط§ط¦ظٹط© ظˆط§ظ„ظ†ط­ظˆظٹط©.
+المطلوب منك:
+كتابة نص الرسالة الأساسي (مضمون الخطاب) بأسلوب مهني ومقنع، ومكتوب بلغة عربية فصحى بليغة وخالية تماماً من الأخطاء الإملائية والنحوية.
 
-ظ‚ظˆط§ط¹ط¯ ط§ظ„طµظٹط§ط؛ط© ط§ظ„ظ‡ط§ظ…ط© ط¬ط¯ط§ظ‹:
-1. ط§ظƒطھط¨ ظپظ‚ط· ظپظ‚ط±ط§طھ ط§ظ„ظ…ط¶ظ…ظˆظ† ط§ظ„ط£ط³ط§ط³ظٹ ظ„ظ„ط®ط·ط§ط¨ (ط¹ط§ط¯ط© ظ…ظ† ظپظ‚ط±طھظٹظ† ط¥ظ„ظ‰ ط«ظ„ط§ط« ظپظ‚ط±ط§طھ ظ…طھظ†ط§ط³ظ‚ط©).
-2. ظ„ط§ طھظƒطھط¨ ط§ظ„ط¨ط³ظ…ظ„ط© ("ط¨ط³ظ… ط§ظ„ظ„ظ‡ ط§ظ„ط±ط­ظ…ظ† ط§ظ„ط±ط­ظٹظ…") ظپظٹ ط§ظ„ط¨ط¯ط§ظٹط©.
-3. ظ„ط§ طھظƒطھط¨ ط§ط³ظ… ط§ظ„ظ…ط±ط³ظ„ ط¥ظ„ظٹظ‡ ط£ظˆ ط§ظ„طھط±ط­ظٹط¨ ط§ظ„ط§ظپطھطھط§ط­ظٹ.
-4. ظ„ط§ طھظƒطھط¨ ط³ط·ط± ط§ظ„ظ…ظˆط¶ظˆط¹.
-5. ظ„ط§ طھظƒطھط¨ ط¹ط¨ط§ط±ط© ط§ظ„ط®طھط§ظ….
-6. ظ„ط§ طھظƒطھط¨ ط­ظ‚ظ„ ط§ظ„طھظˆظ‚ظٹط¹ ط£ظˆ ط§ط³ظ… ط§ظ„ظ…ط¯ظٹط± ط£ظˆ ط§ظ„ط®طھظ… ظپظٹ ط§ظ„ظ†ظ‡ط§ظٹط©.
-7. ط¬ظ…ظٹط¹ ظ‡ط°ظ‡ ط§ظ„ط¹ظ†ط§طµط± طھظڈط¶ط§ظپ طھظ„ظ‚ط§ط¦ظٹط§ظ‹ ط¨ظˆط§ط³ط·ط© ظ‚ط§ظ„ط¨ ط§ظ„ظ†ط¸ط§ظ….
-8. ط§ط¨ط¯ط£ ظ…ط¨ط§ط´ط±ط© ط¨ظƒطھط§ط¨ط© ظ†طµ ط§ظ„ظپظ‚ط±ط© ط§ظ„ط£ظˆظ„ظ‰ (ظ†ط¨ط±ط©: ${tone === 'urgent' ? 'ط¹ط§ط¬ظ„ط© ظˆظ‡ط§ظ…ط© ط¬ط¯ط§ظ‹' : 'ط±ط³ظ…ظٹط© ظˆظ…ظ‡ظ†ظٹط©'}).
-9. ظ„ط§ طھط³طھط®ط¯ظ… ط¹ظ„ط§ظ…ط§طھ Markdown.
+قواعد الصياغة الهامة جداً:
+1. اكتب فقط فقرات المضمون الأساسي للخطاب (عادة من فقرتين إلى ثلاث فقرات متناسقة).
+2. لا تكتب البسملة ("بسم الله الرحمن الرحيم") في البداية.
+3. لا تكتب اسم المرسل إليه أو الترحيب الافتتاحي.
+4. لا تكتب سطر الموضوع.
+5. لا تكتب عبارة الختام.
+6. لا تكتب حقل التوقيع أو اسم المدير أو الختم في النهاية.
+7. جميع هذه العناصر تُضاف تلقائياً بواسطة قالب النظام.
+8. ابدأ مباشرة بكتابة نص الفقرة الأولى (نبرة: ${tone === 'urgent' ? 'عاجلة وهامة جداً' : 'رسمية ومهنية'}).
+9. لا تستخدم علامات Markdown.
 `;
 
     const candidateModels = [
@@ -270,7 +271,7 @@ ${subject ? `ظ…ظˆط¶ظˆط¹ ط§ظ„ط®ط·ط§ط¨: ${subject}` : ''}
         console.log(`Attempting letter generation with model: ${modelName}`);
         const model = ai.getGenerativeModel({ model: modelName });
         result = await model.generateContentStream({
-          contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nط§ظ„ظ…ظˆط¶ظˆط¹:\n${prompt}` }] }],
+          contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nالموضوع:\n${prompt}` }] }],
           generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
         });
         selectedModel = modelName;
@@ -297,7 +298,7 @@ ${subject ? `ظ…ظˆط¶ظˆط¹ ط§ظ„ط®ط·ط§ط¨: ${subject}` : ''}
   } catch (error) {
     console.error('Error generating letter:', error);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'ط­ط¯ط« ط®ط·ط£ ط£ط«ظ†ط§ط، ظ…ط¹ط§ظ„ط¬ط© ط·ظ„ط¨ظƒ ظ…ط¹ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ.', details: error.message });
+      res.status(500).json({ error: 'حدث خطأ أثناء معالجة طلبك مع الذكاء الاصطناعي.', details: error.message });
     } else {
       res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
       res.end();
@@ -305,8 +306,7 @@ ${subject ? `ظ…ظˆط¶ظˆط¹ ط§ظ„ط®ط·ط§ط¨: ${subject}` : ''}
   }
 });
 
-// â”€â”€â”€ START â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── START ──────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`âœ… Backend running on http://localhost:${PORT}`);
+  console.log(`✅ Backend running on http://localhost:${PORT}`);
 });
-
