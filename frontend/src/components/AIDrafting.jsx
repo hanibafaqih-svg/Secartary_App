@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import { Sparkles, Send, AlertCircle, RefreshCw, UploadCloud, FileText, Trash2, CheckCircle2, FileCode } from 'lucide-react';
 import { extractTextFromFile } from '../utils/fileParser';
 
-export default function AIDrafting({ company, formData, onDraftGenerated }) {
+export default function AIDrafting({ company, formData, onDraftGenerated, onDataExtracted }) {
   const [prompt, setPrompt] = useState('');
   const [tone, setTone] = useState('formal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [fileError, setFileError] = useState('');
   const [parsingFile, setParsingFile] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
@@ -25,6 +26,7 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
     if (!file) return;
 
     setFileError('');
+    setSuccessMessage('');
     setParsingFile(true);
 
     try {
@@ -53,6 +55,7 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
   const handleRemoveFile = () => {
     setAttachedFile(null);
     setFileError('');
+    setSuccessMessage('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -67,9 +70,10 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
 
     setLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
-      const effectivePrompt = prompt.trim() || 'صياغة خطاب رسمي متكامل بالاستناد إلى المستند المرفق';
+      const effectivePrompt = prompt.trim();
       const response = await fetch('/api/generate-letter', {
         method: 'POST',
         headers: {
@@ -78,6 +82,7 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
         body: JSON.stringify({
           prompt: effectivePrompt,
           recipient: formData?.recipient || '',
+          recipients: formData?.recipients || [],
           subject: formData?.subject || '',
           company,
           tone,
@@ -85,55 +90,22 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
         })
       });
 
-      if (!response.ok) {
-        const contentType = response.headers.get('Content-Type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
-          throw new Error(data.error || 'حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
-        } else {
-          throw new Error('حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
-        }
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'حدث خطأ أثناء معالجة طلبك مع الذكاء الاصطناعي.');
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let accumulatedText = '';
-
-      // Initialize the draft as empty in the parent component
-      onDraftGenerated('');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Hold onto incomplete lines
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-
-          const dataStr = trimmed.slice(6).trim();
-          if (dataStr === '[DONE]') {
-            continue;
-          }
-
-          try {
-            const parsed = JSON.parse(dataStr);
-            if (parsed.error) {
-              throw new Error(parsed.error);
-            }
-            if (parsed.text) {
-              accumulatedText += parsed.text;
-              onDraftGenerated(accumulatedText);
-            }
-          } catch (jsonErr) {
-            console.error('Failed to parse streaming json chunk:', jsonErr, dataStr);
-          }
-        }
+      if (onDataExtracted) {
+        onDataExtracted({
+          recipients: data.recipients,
+          subject: data.subject,
+          content: data.content
+        });
+      } else if (onDraftGenerated) {
+        onDraftGenerated(data.content);
       }
+
+      setSuccessMessage('✨ تم تحليل البيانات وصياغة الخطاب وتعبئة النموذج تلقائياً بنجاح!');
 
     } catch (err) {
       console.error("AI Fetch Error: ", err);
@@ -158,6 +130,13 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
           <div className="error-alert animate-shake">
             <AlertCircle size={18} className="icon-error" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="success-alert animate-fade-in">
+            <CheckCircle2 size={18} className="icon-success" />
+            <span>{successMessage}</span>
           </div>
         )}
 
@@ -416,6 +395,22 @@ export default function AIDrafting({ company, formData, onDraftGenerated }) {
         .btn-remove-file:hover {
           background: rgba(239, 68, 68, 0.25);
           color: #fff;
+        }
+        .success-alert {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 16px;
+          background: rgba(34, 197, 94, 0.12);
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          border-radius: var(--radius-sm);
+          color: #86efac;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        .icon-success {
+          color: #4ade80;
+          flex-shrink: 0;
         }
         .file-alert {
           margin-top: 8px;

@@ -214,6 +214,24 @@ export default function App() {
     }));
   };
 
+  const handleAIDataExtracted = ({ recipients, subject, content }) => {
+    setFormData(prev => {
+      let finalRecipients = prev.recipients;
+      if (Array.isArray(recipients) && recipients.length > 0) {
+        finalRecipients = recipients.filter(Boolean);
+        if (finalRecipients.length === 0) finalRecipients = [''];
+      }
+
+      return {
+        ...prev,
+        recipients: finalRecipients,
+        recipient: finalRecipients[0] || prev.recipient,
+        subject: subject || prev.subject,
+        body: content ? content.trim() : prev.body
+      };
+    });
+  };
+
   const handleExportPDF = async () => {
     try {
       let documentSubject = '';
@@ -468,6 +486,7 @@ export default function App() {
                 company={company}
                 formData={formData}
                 onDraftGenerated={handleDraftGenerated} 
+                onDataExtracted={handleAIDataExtracted}
               />
             )}
             

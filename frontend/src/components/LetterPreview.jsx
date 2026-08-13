@@ -510,13 +510,13 @@ const previewStyles = `
     user-select: text; /* Allow highlighting preview text */
   }
 
-  /* High-res background image layout */
+  /* High-res background image layout - locked to Page 1 A4 dimensions */
   .letterhead-bg-image {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 794px;
+    height: 1123px;
     object-fit: fill;
     z-index: 1;
     pointer-events: none;
@@ -744,12 +744,12 @@ const previewStyles = `
     line-height: 1.5;
   }
   
-  /* Petro South Footer Contact Overlay */
+  /* Petro South Footer Contact Overlay - locked to bottom of Page 1 */
   .petro-footer-contact-overlay {
     position: absolute;
-    bottom: 0;
+    top: 1075px;
     left: 0;
-    width: 100%;
+    width: 794px;
     height: 48px;
     background: #1B2348;
     border-top: 3px solid #f35c33;

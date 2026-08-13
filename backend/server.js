@@ -219,16 +219,16 @@ app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
   }
 });
 
-// ─── AI LETTER GENERATION ───────────────────────────────────────────────────
+// ─── AI LETTER GENERATION & AUTO-FILL EXTRACTOR ───────────────────────────
 const apiKey = process.env.GEMINI_API_KEY;
 let ai;
 if (apiKey) ai = new GoogleGenerativeAI(apiKey);
 
 app.post('/api/generate-letter', async (req, res) => {
-  const { prompt, company, tone = 'formal', recipient = '', subject = '', attachedText = '' } = req.body;
+  const { prompt = '', company, tone = 'formal', recipient = '', recipients = [], subject = '', attachedText = '' } = req.body;
 
-  if (!prompt || prompt.trim() === '') {
-    return res.status(400).json({ error: 'الرجاء إدخال موضوع الرسالة.' });
+  if (!prompt.trim() && !attachedText.trim()) {
+    return res.status(400).json({ error: 'الرجاء إدخال موضوع الرسالة أو إرفاق ملف مستند للاستناد إليه.' });
   }
   if (!apiKey || !ai) {
     return res.status(500).json({ error: 'مفتاح Gemini API غير مبرمج في الخادم.' });
@@ -236,29 +236,35 @@ app.post('/api/generate-letter', async (req, res) => {
 
   try {
     const companyContext = company === 'Petro South'
-      ? 'شركة بيترو ساوث (Petro South) - وهي شركة متخصصة في قطاع النفط والغاز والخدمات البترولية واللوجستية.'
-      : 'شركة المبتكرون العرب (MBTKRON Arab) - وهي شركة رائدة في المقاولات العامة والخدمات الهندسية والطاقة البديلة.';
+      ? 'شركة بيترو ساوث (Petro South) - متخصصة في الخدمات البترولية والنفط والغاز واللوجستيات.'
+      : 'شركة المبتكرون العرب (MBTKRON Arab) - متخصصة في المقاولات العامة والخدمات الهندسية والطاقة البديلة.';
 
     const systemPrompt = `
-أنت مساعد ذكاء اصطناعي محترف متخصص في صياغة الرسائل والخطابات الرسمية للشركات باللغة العربية الفصحى.
-سياق الشركة الحالية: ${companyContext}
-${recipient ? `الجهة المرسل إليها: ${recipient}` : ''}
-${subject ? `موضوع الخطاب: ${subject}` : ''}
-${attachedText ? `نص المستند المرفق للاسترشاد والاستناد إليه:\n"""\n${attachedText.slice(0, 15000)}\n"""` : ''}
+أنت خبير ذكاء اصطناعي محترف متخصص في تحليل وفهم المستندات، واستخراج البيانات الرسمية، وصياغة الخطابات للشركات باللغة العربية الفصحى.
 
-المطلوب منك:
-كتابة نص الرسالة الأساسي (مضمون الخطاب) بأسلوب مهني ومقنع، ومكتوب بلغة عربية فصحى بليغة وخالية تماماً من الأخطاء الإملائية والنحوية، مستفيداً من تفاصيل وسياق المستند المرفق إن وُجد.
+سياق الشركة: ${companyContext}
+${recipient || (recipients && recipients.length) ? `المرسل إليهم المدخلين مسبقاً: ${[...recipients, recipient].filter(Boolean).join('، ')}` : ''}
+${subject ? `الموضوع المدخل مسبقاً: ${subject}` : ''}
 
-قواعد الصياغة الهامة جداً:
-1. اكتب فقط فقرات المضمون الأساسي للخطاب (عادة من فقرتين إلى ثلاث فقرات متناسقة).
-2. لا تكتب البسملة ("بسم الله الرحمن الرحيم") في البداية.
-3. لا تكتب اسم المرسل إليه أو الترحيب الافتتاحي.
-4. لا تكتب سطر الموضوع.
-5. لا تكتب عبارة الختام.
-6. لا تكتب حقل التوقيع أو اسم المدير أو الختم في النهاية.
-7. جميع هذه العناصر تُضاف تلقائياً بواسطة قالب النظام.
-8. ابدأ مباشرة بكتابة نص الفقرة الأولى (نبرة: ${tone === 'urgent' ? 'عاجلة وهامة جداً' : 'رسمية ومهنية'}).
-9. لا تستخدم علامات Markdown.
+${attachedText ? `نص المستند المرفق للاستناد إليه واستخراج البيانات وصياغة الخطاب منه:\n"""\n${attachedText.slice(0, 20000)}\n"""` : ''}
+
+توجيهات المستخدم الإضافية:
+${prompt || 'استخرج بيانات الخطاب بالكامل (المرسل إليهم، الموضوع، ومضمون الخطاب) بناءً على المستند المرفق.'}
+
+المطلوب منك بدقة:
+1. استخراج الجهة أو الجهات المرسل إليها (recipients) كمصفوفة نصوص. إذا لم تكن مذكورة صراحة، استنتج جهة مناسبة أو استخدم الجهة المدخلة.
+2. صياغة عنوان موضوع واضح ومهني ودقيق للخطاب (subject).
+3. صياغة المضمون الأساسي الكامل للخطاب (content) بأسلوب مقنع ومحترف وبلغة عربية فصحى بليغة (نبرة: ${tone === 'urgent' ? 'عاجلة وهامة جداً' : 'رسمية ومهنية'}).
+   - لا تكتب البسملة ("بسم الله الرحمن الرحيم").
+   - لا تكتب سطر الموضوع داخل المضمون.
+   - لا تكتب الترحيب الافتتاحي أو الخاتمة أو التوقيع لأن النظام يضيفها تلقائياً.
+
+يجب أن تكون النتيجة حصراً بصيغة JSON مطابقة تماماً للمخطط التالي:
+{
+  "recipients": ["اسم الجهة أو الشخص 1", "اسم الجهة 2 (اختياري)"],
+  "subject": "موضوع الخطاب الدقيق والمهني",
+  "content": "نص المضمون الأساسي للخطاب..."
+}
 `;
 
     const candidateModels = [
@@ -271,11 +277,16 @@ ${attachedText ? `نص المستند المرفق للاسترشاد والاس
 
     for (const modelName of candidateModels) {
       try {
-        console.log(`Attempting letter generation with model: ${modelName}`);
-        const model = ai.getGenerativeModel({ model: modelName });
-        result = await model.generateContentStream({
-          contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nالموضوع والملاحظات:\n${prompt}` }] }],
-          generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
+        console.log(`Attempting structured letter generation with model: ${modelName}`);
+        const model = ai.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.4
+          }
+        });
+        result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: systemPrompt }] }]
         });
         selectedModel = modelName;
         break;
@@ -286,26 +297,32 @@ ${attachedText ? `نص المستند المرفق للاسترشاد والاس
     }
 
     if (!result) throw new Error(`All Gemini models failed. Last: ${lastError?.message}`);
-    console.log(`Streaming with model: ${selectedModel}`);
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    for await (const chunk of result.stream) {
-      res.write(`data: ${JSON.stringify({ text: chunk.text() })}\n\n`);
+    
+    const rawText = result.response.text();
+    let parsedData;
+    try {
+      parsedData = JSON.parse(rawText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim());
+    } catch (parseErr) {
+      console.warn("JSON parse fallback for AI response:", rawText);
+      parsedData = {
+        recipients: recipient ? [recipient] : [],
+        subject: subject || '',
+        content: rawText
+      };
     }
-    res.write('data: [DONE]\n\n');
-    res.end();
+
+    res.json({
+      success: true,
+      recipients: Array.isArray(parsedData.recipients) && parsedData.recipients.length > 0 
+        ? parsedData.recipients 
+        : (parsedData.recipients ? [parsedData.recipients] : (recipient ? [recipient] : [])),
+      subject: parsedData.subject || subject || '',
+      content: parsedData.content || rawText
+    });
 
   } catch (error) {
     console.error('Error generating letter:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'حدث خطأ أثناء معالجة طلبك مع الذكاء الاصطناعي.', details: error.message });
-    } else {
-      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-      res.end();
-    }
+    res.status(500).json({ error: 'حدث خطأ أثناء معالجة طلبك مع الذكاء الاصطناعي.', details: error.message });
   }
 });
 

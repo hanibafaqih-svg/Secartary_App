@@ -1,1 +1,1 @@
-feat(phase-2): advanced PDF layout with fixed header positioning and AI file upload parser (PDF/Word/TXT)
+fix(phase-2): AI document auto-fill for all form fields and fixed Page 1 date/ref anchoring without pagination shifting
