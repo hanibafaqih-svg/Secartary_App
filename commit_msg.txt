@@ -1,1 +1,1 @@
-fix(phase-2): bundle pdfjs worker locally for Vite PDF upload parsing and anchor header metadata to Page 1
+fix(phase-2): visually calibrated top-down pixel coordinates for Date and Reference for Petro South and MBTKRON

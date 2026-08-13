@@ -149,8 +149,8 @@ export default function App() {
       const storedY = localStorage.getItem(`headerY_${companyKey}_${mode}`);
       const storedSig = localStorage.getItem(`signatureMarginTop_${companyKey}_${mode}`);
 
-      const defaultX = isPetro ? 390 : 380;
-      const defaultY = isPetro ? 750 : 800;
+      const defaultX = isPetro ? 605 : 545;
+      const defaultY = isPetro ? 116 : 76;
       const defaultSig = 40;
 
       const parsedX = storedX ? parseInt(storedX, 10) : NaN;

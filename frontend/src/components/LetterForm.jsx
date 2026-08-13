@@ -204,8 +204,10 @@ export default function LetterForm({
     );
   }
 
-  const safeX = (formData?.headerX !== undefined && formData?.headerX !== null && !isNaN(Number(formData.headerX))) ? Number(formData.headerX) : 380;
-  const safeY = (formData?.headerY !== undefined && formData?.headerY !== null && !isNaN(Number(formData.headerY))) ? Number(formData.headerY) : (isPetro ? 755 : 800);
+  const defaultHeaderX = isPetro ? 605 : 545;
+  const defaultHeaderY = isPetro ? 116 : 76;
+  const safeX = (formData?.headerX !== undefined && formData?.headerX !== null && !isNaN(Number(formData.headerX))) ? Number(formData.headerX) : defaultHeaderX;
+  const safeY = (formData?.headerY !== undefined && formData?.headerY !== null && !isNaN(Number(formData.headerY))) ? Number(formData.headerY) : defaultHeaderY;
 
   const renderSharedControls = () => {
     return (
@@ -324,19 +326,19 @@ export default function LetterForm({
                 <button 
                   type="button" 
                   className="position-btn decrease-btn"
-                  onClick={() => handleChange('headerX', Math.max(0, safeX - 5))}
-                  title="تحريك ليسار"
+                  onClick={() => handleChange('headerX', Math.max(100, safeX - 2))}
+                  title="تحريك لليسار"
                 >
                   <Minus size={14} />
                   <span>يسار (-)</span>
                 </button>
                 <div className="position-value-display">
-                  {safeX} pt
+                  {safeX} px
                 </div>
                 <button 
                   type="button" 
                   className="position-btn increase-btn"
-                  onClick={() => handleChange('headerX', Math.min(600, safeX + 5))}
+                  onClick={() => handleChange('headerX', Math.min(750, safeX + 2))}
                   title="تحريك لليمين"
                 >
                   <Plus size={14} />
@@ -351,23 +353,23 @@ export default function LetterForm({
                 <button 
                   type="button" 
                   className="position-btn decrease-btn"
-                  onClick={() => handleChange('headerY', Math.max(400, safeY - 5))}
-                  title="تحريك للأسفل"
+                  onClick={() => handleChange('headerY', Math.max(20, safeY - 2))}
+                  title="تحريك للأعلى"
                 >
                   <Minus size={14} />
-                  <span>أسفل (-)</span>
+                  <span>أعلى (-)</span>
                 </button>
                 <div className="position-value-display">
-                  {safeY} pt
+                  {safeY} px
                 </div>
                 <button 
                   type="button" 
                   className="position-btn increase-btn"
-                  onClick={() => handleChange('headerY', Math.min(850, safeY + 5))}
-                  title="تحريك للأعلى"
+                  onClick={() => handleChange('headerY', Math.min(300, safeY + 2))}
+                  title="تحريك للأسفل"
                 >
                   <Plus size={14} />
-                  <span>أعلى (+)</span>
+                  <span>أسفل (+)</span>
                 </button>
               </div>
             </div>
