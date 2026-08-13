@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth, isConfigured, mockAuth, signInWithEmailAndPassword } from '../firebase';
-import { Mail, Lock, Eye, EyeOff, ShieldAlert, LogIn, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldAlert, LogIn, AlertCircle, Zap } from 'lucide-react';
 
 export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -8,6 +8,15 @@ export default function Login({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleQuickDemoLogin = () => {
+    onLoginSuccess({
+      uid: 'staging-demo-admin-123',
+      email: 'hanibafaqih@gmail.com',
+      role: 'admin',
+      displayName: 'المدير التجريبي'
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,6 +140,35 @@ export default function Login({ onLoginSuccess }) {
               </span>
             )}
           </button>
+
+          {/* Quick Demo Login Button for Staging */}
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={handleQuickDemoLogin}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                background: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                color: '#a5b4fc',
+                fontWeight: '700',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.3)'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'; e.currentTarget.style.color = '#a5b4fc'; }}
+            >
+              <Zap size={16} style={{ color: '#fbbf24' }} />
+              <span>⚡ دخول سريع مباشر لاختبار المرحلة الأولى (Demo Login)</span>
+            </button>
+          </div>
         </form>
 
         <div className="login-footer">
