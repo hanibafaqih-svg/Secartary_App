@@ -225,7 +225,7 @@ let ai;
 if (apiKey) ai = new GoogleGenerativeAI(apiKey);
 
 app.post('/api/generate-letter', async (req, res) => {
-  const { prompt, company, tone = 'formal', recipient = '', subject = '' } = req.body;
+  const { prompt, company, tone = 'formal', recipient = '', subject = '', attachedText = '' } = req.body;
 
   if (!prompt || prompt.trim() === '') {
     return res.status(400).json({ error: 'الرجاء إدخال موضوع الرسالة.' });
@@ -244,9 +244,10 @@ app.post('/api/generate-letter', async (req, res) => {
 سياق الشركة الحالية: ${companyContext}
 ${recipient ? `الجهة المرسل إليها: ${recipient}` : ''}
 ${subject ? `موضوع الخطاب: ${subject}` : ''}
+${attachedText ? `نص المستند المرفق للاسترشاد والاستناد إليه:\n"""\n${attachedText.slice(0, 15000)}\n"""` : ''}
 
 المطلوب منك:
-كتابة نص الرسالة الأساسي (مضمون الخطاب) بأسلوب مهني ومقنع، ومكتوب بلغة عربية فصحى بليغة وخالية تماماً من الأخطاء الإملائية والنحوية.
+كتابة نص الرسالة الأساسي (مضمون الخطاب) بأسلوب مهني ومقنع، ومكتوب بلغة عربية فصحى بليغة وخالية تماماً من الأخطاء الإملائية والنحوية، مستفيداً من تفاصيل وسياق المستند المرفق إن وُجد.
 
 قواعد الصياغة الهامة جداً:
 1. اكتب فقط فقرات المضمون الأساسي للخطاب (عادة من فقرتين إلى ثلاث فقرات متناسقة).
@@ -273,7 +274,7 @@ ${subject ? `موضوع الخطاب: ${subject}` : ''}
         console.log(`Attempting letter generation with model: ${modelName}`);
         const model = ai.getGenerativeModel({ model: modelName });
         result = await model.generateContentStream({
-          contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nالموضوع:\n${prompt}` }] }],
+          contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nالموضوع والملاحظات:\n${prompt}` }] }],
           generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
         });
         selectedModel = modelName;

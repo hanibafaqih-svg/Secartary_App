@@ -1089,6 +1089,17 @@ const previewStyles = `
       transform: none !important;
       left: auto !important;
       top: auto !important;
+      box-shadow: none !important;
+      width: 100% !important;
+    }
+    thead {
+      display: table-header-group !important;
+    }
+    tfoot {
+      display: table-footer-group !important;
+    }
+    tbody tr {
+      page-break-inside: auto;
     }
   }
 `;

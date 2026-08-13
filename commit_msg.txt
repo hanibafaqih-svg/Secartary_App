@@ -1,0 +1,1 @@
+feat(phase-2): advanced PDF layout with fixed header positioning and AI file upload parser (PDF/Word/TXT)
