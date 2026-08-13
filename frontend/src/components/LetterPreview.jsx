@@ -540,26 +540,24 @@ const previewStyles = `
     font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
     z-index: 20;
     pointer-events: none;
-  }
-  
-  /* Petro South: Date/Ref sits upper-left of letterhead header area */
-  .petro-meta {
-    top: 11.5%;    /* ~129px of 1123px — vertically aligned with Date: line */
-    left: 8%;      /* ~63px of 794px — horizontally aligned with form field */
-    width: 18%;    /* ~143px — enough for date text */
-    gap: 1.2%;     /* ~13px vertical gap between Date and Ref */
     direction: ltr;
     text-align: left;
   }
   
-  /* MBTKRON Arab: Date/Ref sits upper-left of letterhead header area */
+  /* Petro South: "Date:" at ~76% from left, ~11.5% from top on letterhead image */
+  .petro-meta {
+    top: 11.3%;
+    left: 76%;
+    width: 20%;
+    gap: 0.8%;
+  }
+  
+  /* MBTKRON Arab: "Date:" at ~71% from left, ~5% from top on letterhead image */
   .mbtkron-meta {
-    top: 11.5%;    /* ~129px of 1123px */
-    left: 8%;      /* ~63px of 794px */
-    width: 20%;    /* ~159px */
-    gap: 1%;       /* ~11px vertical gap between Date and Ref */
-    direction: rtl;
-    text-align: right;
+    top: 5%;
+    left: 71%;
+    width: 24%;
+    gap: 0.6%;
   }
 
   .meta-label {
