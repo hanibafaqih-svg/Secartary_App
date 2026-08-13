@@ -110,7 +110,20 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
                       <div className="print-content">
                         <div className="letter-content">
                           <div className="recipient-block">
-                            <span className="recipient-name">{formData?.recipient || '....................................................................................'}</span>
+                            {(() => {
+                              const list = (Array.isArray(formData?.recipients) && formData.recipients.filter(Boolean).length > 0)
+                                ? formData.recipients.filter(Boolean)
+                                : (formData?.recipient ? [formData.recipient] : []);
+                              
+                              if (list.length > 0) {
+                                return list.map((rec, rIdx) => (
+                                  <div key={rIdx} className="recipient-name-line" style={{ marginBottom: rIdx < list.length - 1 ? '4px' : '0' }}>
+                                    <span className="recipient-name">{rec}</span>
+                                  </div>
+                                ));
+                              }
+                              return <span className="recipient-name">....................................................................................</span>;
+                            })()}
                           </div>
 
                           <div className="greeting-block">
@@ -170,6 +183,24 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
                               )}
                             </div>
                           </div>
+
+                          {/* Attachments & CC rendered at very bottom of document content (Attachments first, CC second) */}
+                          {(formData?.attachments || formData?.cc) && (
+                            <div className="letter-footer-attachments-cc">
+                              {formData?.attachments && (
+                                <div className="footer-meta-block attachments-meta">
+                                  <strong className="meta-heading">المرفقات:</strong>
+                                  <div className="meta-text-content">{formData.attachments}</div>
+                                </div>
+                              )}
+                              {formData?.cc && (
+                                <div className="footer-meta-block cc-meta">
+                                  <strong className="meta-heading">نسخة إلى:</strong>
+                                  <div className="meta-text-content">{formData.cc}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -192,15 +223,21 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
   }
 
   // Default to quotation mode preview
+  const isInvoice = quotationData?.docType === 'invoice';
+  const quotationDocTitle = isInvoice ? 'فـاتـورة' : 'عـرض سـعـر';
+  const quotationGreeting = isInvoice 
+    ? 'تحية طيبة وبعد،،، فيما يلي تفاصيل الفاتورة والخدمات والأصناف الموضحة أدناه:' 
+    : 'تحية طيبة وبعد،،، بناءً على طلبكم الكريم، يسرنا أن نقدم لكم عرض السعر والخدمات للأصناف الموضحة أدناه:';
+
   return (
     <div className="preview-container glass-panel animate-fade-in mode-quotation">
       <div className="card-header">
         <div className="header-title">
           <Eye className="preview-icon" size={20} />
-          <h3>المعاينة الفورية لعرض السعر</h3>
+          <h3>{isInvoice ? 'المعاينة الفورية للفاتورة' : 'المعاينة الفورية لعرض السعر'}</h3>
         </div>
         <p className="card-subtitle">
-          شاهد كيف سيظهر جدول التسعير والبنود على أوراق الشركة الرسمية
+          {isInvoice ? 'شاهد كيف ستظهر الفاتورة والبنود على أوراق الشركة الرسمية' : 'شاهد كيف سيظهر جدول التسعير والبنود على أوراق الشركة الرسمية'}
         </p>
       </div>
 
@@ -245,7 +282,7 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
                     <div className="print-content">
                       <div className="letter-content">
                         <div className="quotation-title-block">
-                          عـرض سـعـر
+                          {quotationDocTitle}
                         </div>
 
                         <div className="quotation-client-block">
@@ -266,7 +303,7 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
                         </div>
 
                         <div className="greeting-block">
-                          تحية طيبة وبعد،،، بناءً على طلبكم الكريم، يسرنا أن نقدم لكم عرض السعر والخدمات للأصناف الموضحة أدناه:
+                          {quotationGreeting}
                         </div>
 
                         <table className="preview-items-table">
@@ -644,6 +681,33 @@ const previewStyles = `
     z-index: 10;
     opacity: 0.88;
     mix-blend-mode: multiply;
+  }
+  
+  /* Attachments and CC Footer Metadata */
+  .letter-footer-attachments-cc {
+    margin-top: 25px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccc;
+    font-size: 13px;
+    color: #2b2b2b;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    page-break-inside: avoid;
+  }
+  .footer-meta-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .meta-heading {
+    font-weight: 700;
+    color: #111;
+    min-width: 70px;
+  }
+  .meta-text-content {
+    white-space: pre-wrap;
+    line-height: 1.5;
   }
   
   .corporate-stamp {

@@ -188,7 +188,9 @@ app.post('/api/finalize', upload.single('pdf'), async (req, res) => {
 
     // Telegram notification (fire-and-forget)
     const companyLabel = isPetro ? 'بيترو ساوث (Petro South)' : 'المبتكرون العرب (MBTKRON)';
-    const typeLabel    = documentType === 'Letter' ? '📂 خطاب رسمي' : '📊 عرض سعر';
+    let typeLabel = '📂 خطاب رسمي';
+    if (documentType === 'Quotation') typeLabel = '📊 عرض سعر';
+    else if (documentType === 'Invoice') typeLabel = '🧾 فاتورة';
     const dateStr      = now.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Aden' });
 
     const tgMsg = [

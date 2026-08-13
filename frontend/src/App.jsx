@@ -19,6 +19,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('workspace'); // 'workspace' or 'admin'
   const [mode, setMode] = useState('letter'); // 'letter' or 'quotation'
   const [quotationData, setQuotationData] = useState({
+    docType: 'quotation', // 'quotation' or 'invoice'
     clientName: '',
     clientAddress: '',
     rfqNumber: '',
@@ -36,8 +37,11 @@ export default function App() {
 
   // Global letter form state (retained across exports and views)
   const [formData, setFormData] = useState({
+    recipients: [''],
     recipient: '',
     subject: '', // Added subject line field
+    attachments: '', // Mofraqat
+    cc: '', // Nuskha Ila
     refNumber: '',
     date: new Date().toISOString().split('T')[0],
     body: '',
@@ -212,6 +216,24 @@ export default function App() {
 
   const handleExportPDF = async () => {
     try {
+      let documentSubject = '';
+      if (mode === 'quotation') {
+        const isInvoice = quotationData.docType === 'invoice';
+        const typeLabel = isInvoice ? 'فاتورة' : 'عرض_سعر';
+        documentSubject = `${typeLabel}_${quotationData.clientName || 'عميل'}`;
+      } else {
+        const firstRecipient = Array.isArray(formData.recipients) ? formData.recipients.filter(Boolean)[0] : formData.recipient;
+        documentSubject = formData.subject || firstRecipient || 'خطاب';
+      }
+
+      const refNum = formData.refNumber || 'REF';
+      const cleanRef = refNum.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').trim();
+      const cleanSubj = documentSubject.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').trim();
+      const exportTitle = `${cleanRef} - ${cleanSubj}`;
+
+      const originalTitle = document.title;
+      document.title = exportTitle;
+
       if (mode === 'quotation') {
         const subtotal = quotationData.items.reduce((sum, item) => sum + ((item.qty || 0) * (item.price || 0)), 0);
         const discount = parseFloat(quotationData.discountValue) || 0;
@@ -224,7 +246,7 @@ export default function App() {
         logLetterExport(
           user?.email || 'unknown@company.com', company,
           formData?.refNumber || 'N/A', quotationData?.clientName || 'زبون غير معروف',
-          'Quotation', grandTotal, quotationData.currency
+          quotationData.docType === 'invoice' ? 'Invoice' : 'Quotation', grandTotal, quotationData.currency
         ).catch(console.error);
       } else {
         logLetterExport(
@@ -233,7 +255,12 @@ export default function App() {
           'letter', 0
         ).catch(console.error);
       }
+
       window.print();
+
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1000);
     } catch (e) {
       console.error('Error triggering print dialog:', e);
     }
@@ -306,17 +333,30 @@ export default function App() {
 
       const pdfBlob = pdf.output('blob');
 
-      // Determine the client / subject label for the filename
-      const clientOrSubject = mode === 'quotation'
-        ? (quotationData.clientName || 'عميل')
-        : (formData.recipient || formData.subject || 'مرسل_إليه');
+      // Determine the client / subject label for the filename: [Reference Number] - [Subject].pdf
+      let documentSubject = '';
+      let docTypeCategory = 'Letter';
+      if (mode === 'quotation') {
+        const isInvoice = quotationData.docType === 'invoice';
+        docTypeCategory = isInvoice ? 'Invoice' : 'Quotation';
+        const typeLabel = isInvoice ? 'فاتورة' : 'عرض_سعر';
+        documentSubject = `${typeLabel}_${quotationData.clientName || 'عميل'}`;
+      } else {
+        const firstRecipient = Array.isArray(formData.recipients) ? formData.recipients.filter(Boolean)[0] : formData.recipient;
+        documentSubject = formData.subject || firstRecipient || 'خطاب';
+      }
+
+      const refNum = formData.refNumber || 'REF-UNKNOWN';
+      const cleanRef = refNum.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').trim();
+      const cleanSubj = documentSubject.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').trim();
+      const pdfFilename = `${cleanRef} - ${cleanSubj}.pdf`;
 
       const uploadData = new FormData();
-      uploadData.append('pdf', pdfBlob, 'document.pdf');
+      uploadData.append('pdf', pdfBlob, pdfFilename);
       uploadData.append('company', company);
-      uploadData.append('refNumber', formData.refNumber || 'REF-UNKNOWN');
-      uploadData.append('clientOrSubject', clientOrSubject);
-      uploadData.append('documentType', mode === 'letter' ? 'Letter' : 'Quotation');
+      uploadData.append('refNumber', refNum);
+      uploadData.append('clientOrSubject', documentSubject);
+      uploadData.append('documentType', docTypeCategory);
       uploadData.append('userEmail', user?.email || 'unknown');
 
       // In development use localhost:5000; in production use same-origin /api

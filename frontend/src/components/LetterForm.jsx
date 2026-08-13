@@ -22,7 +22,10 @@ import {
   AlertTriangle,
   XCircle,
   ExternalLink,
-  X
+  X,
+  Paperclip,
+  Copy,
+  FileCheck
 } from 'lucide-react';
 
 const DEFAULT_AUTOCOMPLETE_ITEMS = [
@@ -66,6 +69,40 @@ export default function LetterForm({
     setFormData(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  // Multiple Recipients Handlers
+  const recipientsList = (Array.isArray(formData.recipients) && formData.recipients.length > 0)
+    ? formData.recipients
+    : [(formData.recipient || '')];
+
+  const handleRecipientChange = (index, value) => {
+    const updated = [...recipientsList];
+    updated[index] = value;
+    setFormData(prev => ({
+      ...prev,
+      recipients: updated,
+      recipient: updated[0] || ''
+    }));
+  };
+
+  const handleAddRecipient = () => {
+    const updated = [...recipientsList, ''];
+    setFormData(prev => ({
+      ...prev,
+      recipients: updated,
+      recipient: updated[0] || ''
+    }));
+  };
+
+  const handleRemoveRecipient = (index) => {
+    if (recipientsList.length <= 1) return;
+    const updated = recipientsList.filter((_, i) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      recipients: updated,
+      recipient: updated[0] || ''
     }));
   };
 
@@ -433,12 +470,18 @@ export default function LetterForm({
       <div className="card-header">
         <div className="header-title">
           <Settings className="form-icon" size={20} />
-          <h3>{mode === 'letter' ? 'تفاصيل وبيانات الخطاب' : 'بيانات وتفاصيل عرض السعر'}</h3>
+          <h3>
+            {mode === 'letter' 
+              ? 'تفاصيل وبيانات الخطاب' 
+              : (quotationData.docType === 'invoice' ? 'بيانات وتفاصيل الفاتورة' : 'بيانات وتفاصيل عرض السعر')}
+          </h3>
         </div>
         <p className="card-subtitle">
           {mode === 'letter' 
             ? 'قم بمراجعة وتعديل بيانات الخطاب الرسمي قبل التصدير' 
-            : 'أدخل تفاصيل العميل، شروط الدفع، قائمة الأصناف والخصومات'}
+            : (quotationData.docType === 'invoice' 
+                ? 'أدخل تفاصيل العميل، شروط الدفع، قائمة أصناف الفاتورة والخصومات'
+                : 'أدخل تفاصيل العميل، شروط الدفع، قائمة الأصناف والخصومات')}
         </p>
       </div>
 
@@ -446,18 +489,43 @@ export default function LetterForm({
         {mode === 'letter' ? (
           /* LETTER FORM FIELDS */
           <>
+            {/* Dynamic Multiple Recipients */}
             <div className="form-row">
-              <div className="input-group">
-                <label htmlFor="recipient">اسم المرسل إليه (الجهة المستلمة)</label>
-                <div className="input-wrapper">
-                  <User className="input-icon-right" size={18} />
-                  <input
-                    id="recipient"
-                    type="text"
-                    placeholder="مثال: سعادة رئيس مجلس إدارة شركة المصافي المحترم"
-                    value={formData.recipient}
-                    onChange={(e) => handleChange('recipient', e.target.value)}
-                  />
+              <div className="input-group w-full">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="m-0 font-semibold text-sm">اسم المرسل إليه (الجهة المستلمة)</label>
+                  <button
+                    type="button"
+                    onClick={handleAddRecipient}
+                    className="btn-add-recipient inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all cursor-pointer"
+                  >
+                    <Plus size={14} />
+                    <span>إضافة مرسل إليه</span>
+                  </button>
+                </div>
+                <div className="recipients-list flex flex-col gap-2 mt-1">
+                  {recipientsList.map((rec, idx) => (
+                    <div key={idx} className="input-wrapper recipient-input-wrapper flex items-center gap-2">
+                      <User className="input-icon-right" size={18} />
+                      <input
+                        type="text"
+                        placeholder={idx === 0 ? "مثال: سعادة رئيس مجلس إدارة شركة المصافي المحترم" : `المرسل إليه الإضافي (${idx + 1})`}
+                        value={rec}
+                        onChange={(e) => handleRecipientChange(idx, e.target.value)}
+                        className="w-full"
+                      />
+                      {recipientsList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRecipient(idx)}
+                          className="btn-remove-recipient p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all cursor-pointer"
+                          title="حذف هذا المرسل إليه"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -529,11 +597,69 @@ export default function LetterForm({
                 onChange={(e) => handleChange('body', e.target.value)}
               />
             </div>
+
+            {/* Optional Attachments & CC Fields */}
+            <div className="form-row grid-2 mt-3">
+              <div className="input-group">
+                <label htmlFor="attachments-field">
+                  <Paperclip size={15} style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />
+                  المرفقات (Attachments) <span style={{ fontSize: '11px', color: '#888', fontWeight: 'normal' }}>(اختياري)</span>
+                </label>
+                <textarea
+                  id="attachments-field"
+                  rows={2}
+                  placeholder="مثال: 1. جدول الكميات&#10;2. الرسم الهندسي"
+                  value={formData.attachments || ''}
+                  onChange={(e) => handleChange('attachments', e.target.value)}
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="cc-field">
+                  <Copy size={15} style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />
+                  نسخة إلى (CC) <span style={{ fontSize: '11px', color: '#888', fontWeight: 'normal' }}>(اختياري)</span>
+                </label>
+                <textarea
+                  id="cc-field"
+                  rows={2}
+                  placeholder="مثال: 1. الإدارة المالية&#10;2. ملف المشروع"
+                  value={formData.cc || ''}
+                  onChange={(e) => handleChange('cc', e.target.value)}
+                />
+              </div>
+            </div>
+
             {renderSharedControls()}
           </>
         ) : (
-          /* QUOTATION FORM FIELDS */
+          /* QUOTATION / INVOICE FORM FIELDS */
           <>
+            {/* Quotation vs Invoice Toggle */}
+            <div className="doc-type-toggle-container mb-4 p-3 rounded-lg border border-white/10 bg-white/5 flex flex-wrap items-center justify-between gap-3">
+              <span className="font-semibold text-sm text-gray-200 flex items-center gap-2">
+                <Briefcase size={16} className="text-indigo-400" />
+                نوع الوثيقة:
+              </span>
+              <div className="toggle-segmented-control flex items-center p-1 rounded-md bg-black/30 border border-white/10">
+                <button
+                  type="button"
+                  className={`segmented-btn px-4 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${(!quotationData.docType || quotationData.docType === 'quotation') ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                  onClick={() => handleQuotationChange('docType', 'quotation')}
+                >
+                  <Briefcase size={14} />
+                  <span>عرض سعر (Quotation)</span>
+                </button>
+                <button
+                  type="button"
+                  className={`segmented-btn px-4 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${quotationData.docType === 'invoice' ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                  onClick={() => handleQuotationChange('docType', 'invoice')}
+                >
+                  <FileCheck size={14} />
+                  <span>فاتورة (Invoice)</span>
+                </button>
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="input-group">
                 <label htmlFor="client-name">اسم العميل / الشركة</label>
@@ -581,7 +707,7 @@ export default function LetterForm({
 
               <div className="input-group">
                 <label htmlFor="ref-number-shared">
-                  الرقم المرجعي لعرض السعر
+                  {quotationData.docType === 'invoice' ? 'الرقم المرجعي للفاتورة' : 'الرقم المرجعي لعرض السعر'}
                   {!isAdmin && (
                     <span style={{ fontSize: '10px', color: '#6b7280', marginRight: '6px', fontWeight: '400' }}>🔒 يُولَّد تلقائياً</span>
                   )}
@@ -603,7 +729,9 @@ export default function LetterForm({
               </div>
 
               <div className="input-group">
-                <label htmlFor="letter-date-shared">تاريخ عرض السعر</label>
+                <label htmlFor="letter-date-shared">
+                  {quotationData.docType === 'invoice' ? 'تاريخ الفاتورة' : 'تاريخ عرض السعر'}
+                </label>
                 <input
                   id="letter-date-shared"
                   type="date"
