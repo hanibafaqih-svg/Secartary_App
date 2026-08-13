@@ -79,6 +79,23 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
 
+              {isPetro && (
+                <div className="petro-footer-contact-overlay">
+                  <div className="petro-contact-item">
+                    <span className="icon">✉</span>
+                    <span>ops@petro-south.com</span>
+                  </div>
+                  <div className="petro-contact-item">
+                    <span className="icon">🌐</span>
+                    <span>www.petro-south.com</span>
+                  </div>
+                  <div className="petro-contact-item">
+                    <span className="icon">📞</span>
+                    <span dir="ltr">+967 771071993 / +967 771231330</span>
+                  </div>
+                </div>
+              )}
+
               <div 
                 className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}
                 style={{
@@ -250,6 +267,23 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
               className="letterhead-bg-image"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
+
+            {isPetro && (
+              <div className="petro-footer-contact-overlay">
+                <div className="petro-contact-item">
+                  <span className="icon">✉</span>
+                  <span>ops@petro-south.com</span>
+                </div>
+                <div className="petro-contact-item">
+                  <span className="icon">🌐</span>
+                  <span>www.petro-south.com</span>
+                </div>
+                <div className="petro-contact-item">
+                  <span className="icon">📞</span>
+                  <span dir="ltr">+967 771071993 / +967 771231330</span>
+                </div>
+              </div>
+            )}
 
             <div 
               className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}
@@ -708,6 +742,37 @@ const previewStyles = `
   .meta-text-content {
     white-space: pre-wrap;
     line-height: 1.5;
+  }
+  
+  /* Petro South Footer Contact Overlay */
+  .petro-footer-contact-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    background: #1B2348;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 35px;
+    font-size: 13px;
+    font-weight: 700;
+    direction: ltr;
+    z-index: 15;
+    letter-spacing: 0.3px;
+  }
+  .petro-contact-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .petro-contact-item .icon {
+    font-size: 13px;
+    opacity: 0.9;
   }
   
   .corporate-stamp {
