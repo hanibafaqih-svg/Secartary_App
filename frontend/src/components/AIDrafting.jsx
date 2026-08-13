@@ -147,7 +147,7 @@ export default function AIDrafting({ company, formData, onDraftGenerated, onData
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept=".pdf,.docx,.doc,.txt"
+            accept=".pdf,.docx,.doc,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/plain"
             style={{ display: 'none' }}
             id="ai-file-input"
             disabled={loading || parsingFile}

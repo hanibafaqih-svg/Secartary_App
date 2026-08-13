@@ -1,1 +1,1 @@
-fix(phase-2): AI document auto-fill for all form fields and fixed Page 1 date/ref anchoring without pagination shifting
+fix(phase-2): bundle pdfjs worker locally for Vite PDF upload parsing and anchor header metadata to Page 1

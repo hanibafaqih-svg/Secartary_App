@@ -1,10 +1,9 @@
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
-// Use standard CDN or bundled worker for pdfjs-dist
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
-}
+// Configure the worker URL dynamically bundled by Vite
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 /**
  * Extract clean textual content from uploaded PDF, Word (docx), or Text files
@@ -18,7 +17,7 @@ export async function extractTextFromFile(file) {
     return await file.text();
   }
 
-  if (extension === 'docx') {
+  if (extension === 'docx' || extension === 'doc') {
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     return result.value ? result.value.trim() : '';
@@ -26,7 +25,12 @@ export async function extractTextFromFile(file) {
 
   if (extension === 'pdf') {
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(arrayBuffer),
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    });
     const pdf = await loadingTask.promise;
     let fullText = '';
 
