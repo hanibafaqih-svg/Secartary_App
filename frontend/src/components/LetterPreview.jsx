@@ -752,6 +752,7 @@ const previewStyles = `
     width: 100%;
     height: 48px;
     background: #1B2348;
+    border-top: 3px solid #f35c33;
     color: #ffffff;
     display: flex;
     align-items: center;
