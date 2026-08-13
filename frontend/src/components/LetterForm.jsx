@@ -7,6 +7,7 @@ import {
   Square, 
   FileSignature, 
   Sliders, 
+  Plus,
   Trash2, 
   PlusCircle, 
   DollarSign, 
