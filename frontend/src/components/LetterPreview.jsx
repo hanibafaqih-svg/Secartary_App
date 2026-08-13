@@ -40,9 +40,7 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
     grandTotal = Math.max(0, subtotal - discount);
   }
 
-  // Sanitized Layout coordinates and spacing configurations
-  const headerX = (formData?.headerX !== undefined && formData?.headerX !== null && !isNaN(Number(formData.headerX))) ? Number(formData.headerX) : 380;
-  const headerY = (formData?.headerY !== undefined && formData?.headerY !== null && !isNaN(Number(formData.headerY))) ? Number(formData.headerY) : (isPetro ? 755 : 800);
+  // Sanitized Layout spacing configurations (coordinate math removed — using CSS percentages)
   const signatureMarginTop = (formData?.signatureMarginTop !== undefined && formData?.signatureMarginTop !== null && !isNaN(Number(formData.signatureMarginTop))) ? Number(formData.signatureMarginTop) : 40;
   const bodyFontSize = (formData?.bodyFontSize !== undefined && formData?.bodyFontSize !== null && !isNaN(Number(formData.bodyFontSize))) ? Number(formData.bodyFontSize) : 15;
   const lineHeight = (formData?.lineHeight !== undefined && formData?.lineHeight !== null && !isNaN(Number(formData.lineHeight))) ? Number(formData.lineHeight) : 1.8;
@@ -96,13 +94,7 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
                 </div>
               )}
 
-              <div 
-                className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}
-                style={{
-                  left: `${(headerX * 25.4) / 72}mm`,
-                  top: `${((842 - headerY) * 25.4) / 72}mm`
-                }}
-              >
+              <div className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}>
                 <div className="meta-val date-val">
                   {formatDate(formData?.date) || '....................'}
                 </div>
@@ -283,13 +275,7 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
               </div>
             )}
 
-            <div 
-              className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}
-              style={{
-                left: `${(headerX * 25.4) / 72}mm`,
-                top: `${((842 - headerY) * 25.4) / 72}mm`
-              }}
-            >
+            <div className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}>
               <div className="meta-val date-val">
                 {formatDate(formData?.date) || '....................'}
               </div>
@@ -504,6 +490,7 @@ const previewStyles = `
     flex-direction: column;
     flex-shrink: 0;
     user-select: text; /* Allow highlighting preview text */
+    /* position: relative is implicit via position: absolute — children use % of this 794x1123 container */
   }
 
   /* High-res background image layout - locked to Page 1 A4 dimensions */
@@ -544,25 +531,33 @@ const previewStyles = `
     flex-direction: column;
   }
 
-  /* Positioning metadata values directly over letterhead header lines in resolution-independent millimeters */
+  /* ===== Resolution-Independent Percentage Positioning for Date & Reference ===== */
+  /* Uses % of the .a4-page container (794x1123) — scales identically on every screen/DPI/PDF */
   .meta-overlay {
     position: absolute;
     display: flex;
     flex-direction: column;
     font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
     z-index: 20;
-    width: 60mm;
     pointer-events: none;
   }
   
+  /* Petro South: Date/Ref sits upper-left of letterhead header area */
   .petro-meta {
-    gap: 4mm;
+    top: 11.5%;    /* ~129px of 1123px — vertically aligned with Date: line */
+    left: 8%;      /* ~63px of 794px — horizontally aligned with form field */
+    width: 18%;    /* ~143px — enough for date text */
+    gap: 1.2%;     /* ~13px vertical gap between Date and Ref */
     direction: ltr;
     text-align: left;
   }
   
+  /* MBTKRON Arab: Date/Ref sits upper-left of letterhead header area */
   .mbtkron-meta {
-    gap: 4mm;
+    top: 11.5%;    /* ~129px of 1123px */
+    left: 8%;      /* ~63px of 794px */
+    width: 20%;    /* ~159px */
+    gap: 1%;       /* ~11px vertical gap between Date and Ref */
     direction: rtl;
     text-align: right;
   }
@@ -578,7 +573,6 @@ const previewStyles = `
     letter-spacing: 0.5px;
     font-size: 13px;
     color: #1A237E; /* Clean dark blue for printed ink feel */
-    height: 18px;
     line-height: 1.4;
   }
   

@@ -7,9 +7,6 @@ import {
   Square, 
   FileSignature, 
   Sliders, 
-  Move, 
-  Plus, 
-  Minus, 
   Trash2, 
   PlusCircle, 
   DollarSign, 
@@ -204,10 +201,6 @@ export default function LetterForm({
     );
   }
 
-  const defaultHeaderX = isPetro ? 390 : 380;
-  const defaultHeaderY = isPetro ? 750 : 800;
-  const safeX = (formData?.headerX !== undefined && formData?.headerX !== null && !isNaN(Number(formData.headerX))) ? Number(formData.headerX) : defaultHeaderX;
-  const safeY = (formData?.headerY !== undefined && formData?.headerY !== null && !isNaN(Number(formData.headerY))) ? Number(formData.headerY) : defaultHeaderY;
 
   const renderSharedControls = () => {
     return (
@@ -308,70 +301,6 @@ export default function LetterForm({
                 value={formData.signatureMarginTop || 40} 
                 onChange={(e) => handleChange('signatureMarginTop', parseInt(e.target.value))}
               />
-            </div>
-          </div>
-        </div>
-
-        {/* Header Position Settings */}
-        <div className="signatory-subform spacing-settings-block animate-fade-in">
-          <div className="header-title-sub">
-            <Move size={16} />
-            <h4>ضبط موقع الترويسة</h4>
-          </div>
-          
-          <div className="form-row grid-2">
-            <div className="input-group">
-              <label>الموقع الأفقي (المحور X)</label>
-              <div className="position-control-buttons">
-                <button 
-                  type="button" 
-                  className="position-btn decrease-btn"
-                  onClick={() => handleChange('headerX', Math.max(200, safeX - 5))}
-                  title="تحريك لليسار"
-                >
-                  <Minus size={14} />
-                  <span>يسار (-)</span>
-                </button>
-                <div className="position-value-display">
-                  {safeX} pt
-                </div>
-                <button 
-                  type="button" 
-                  className="position-btn increase-btn"
-                  onClick={() => handleChange('headerX', Math.min(550, safeX + 5))}
-                  title="تحريك لليمين"
-                >
-                  <Plus size={14} />
-                  <span>يمين (+)</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label>الموقع العمودي (المحور Y)</label>
-              <div className="position-control-buttons">
-                <button 
-                  type="button" 
-                  className="position-btn decrease-btn"
-                  onClick={() => handleChange('headerY', Math.max(600, safeY - 5))}
-                  title="تحريك للأسفل"
-                >
-                  <Minus size={14} />
-                  <span>أسفل (-)</span>
-                </button>
-                <div className="position-value-display">
-                  {safeY} pt
-                </div>
-                <button 
-                  type="button" 
-                  className="position-btn increase-btn"
-                  onClick={() => handleChange('headerY', Math.min(840, safeY + 5))}
-                  title="تحريك للأعلى"
-                >
-                  <Plus size={14} />
-                  <span>أعلى (+)</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>

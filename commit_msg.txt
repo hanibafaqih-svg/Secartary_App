@@ -1,1 +1,1 @@
-fix(phase-2): use resolution-independent physical A4 millimeter coordinates for Date and Reference on Page 1
+fix(phase-2): abandon absolute math, use resolution-independent CSS percentage positioning for Date/Ref
