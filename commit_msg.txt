@@ -1,1 +1,1 @@
-fix(phase-2): visually calibrated top-down pixel coordinates for Date and Reference for Petro South and MBTKRON
+fix(phase-2): use resolution-independent physical A4 millimeter coordinates for Date and Reference on Page 1

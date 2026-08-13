@@ -99,8 +99,8 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
               <div 
                 className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}
                 style={{
-                  top: `${headerY}px`,
-                  left: `${headerX}px`
+                  left: `${(headerX * 25.4) / 72}mm`,
+                  top: `${((842 - headerY) * 25.4) / 72}mm`
                 }}
               >
                 <div className="meta-val date-val">
@@ -286,8 +286,8 @@ export default function LetterPreview({ company, formData, mode = 'letter', quot
             <div 
               className={`meta-overlay ${isPetro ? 'petro-meta' : 'mbtkron-meta'}`}
               style={{
-                top: `${headerY}px`,
-                left: `${headerX}px`
+                left: `${(headerX * 25.4) / 72}mm`,
+                top: `${((842 - headerY) * 25.4) / 72}mm`
               }}
             >
               <div className="meta-val date-val">
@@ -544,26 +544,25 @@ const previewStyles = `
     flex-direction: column;
   }
 
-  /* Positioning metadata values directly over letterhead header lines */
+  /* Positioning metadata values directly over letterhead header lines in resolution-independent millimeters */
   .meta-overlay {
     position: absolute;
     display: flex;
     flex-direction: column;
     font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
     z-index: 20;
+    width: 60mm;
     pointer-events: none;
   }
   
   .petro-meta {
-    width: 140px;
-    gap: 10px;
+    gap: 4mm;
     direction: ltr;
     text-align: left;
   }
   
   .mbtkron-meta {
-    width: 150px;
-    gap: 9px;
+    gap: 4mm;
     direction: rtl;
     text-align: right;
   }
