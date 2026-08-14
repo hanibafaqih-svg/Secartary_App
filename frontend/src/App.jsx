@@ -294,19 +294,22 @@ export default function App() {
       const pageEl = document.querySelector('.a4-page');
       if (!pageEl) throw new Error('عنصر صفحة الوثيقة غير موجود. تأكد أن المعاينة ظاهرة على الشاشة.');
 
-      // ─── PHASE 1: Capture content (with Date/Ref meta-overlay) ───
-      // meta-overlay now uses FIXED px values so it always renders at the
-      // correct position on page 1 regardless of total document height.
-      // We only hide the letterhead bg image — it will be re-injected via jsPDF.
+      // ─── PHASE 1: Capture ONLY body text ───
+      // Hide the letterhead bg, the meta-overlay Date/Ref, and the footer overlay.
+      // Date/Ref will be drawn by jsPDF doc.text() at exact physical mm coords.
+      // This is the ONLY reliable approach — html2canvas absolute positioning
+      // does not guarantee pixel-perfect placement in the output canvas.
       const letterheadImg = pageEl.querySelector('.letterhead-bg-image');
+      const metaOverlay = pageEl.querySelector('.meta-overlay');
       const footerOverlay = pageEl.querySelector('.petro-footer-contact-overlay');
 
       if (letterheadImg) letterheadImg.style.display = 'none';
+      if (metaOverlay) metaOverlay.style.display = 'none';
       if (footerOverlay) footerOverlay.style.display = 'none';
       pageEl.style.setProperty('transform', 'scale(1)', 'important');
       pageEl.style.setProperty('transform-origin', 'top left', 'important');
 
-      // Wait 2 animation frames to ensure DOM has re-rendered with hidden elements
+      // Wait 2 frames to ensure browser re-renders before capture
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       // Lazy-load heavy libraries
@@ -322,18 +325,19 @@ export default function App() {
           useCORS: true,
           allowTaint: false,
           logging: false,
-          backgroundColor: '#ffffff', // White bg so letterhead layers correctly under it
+          backgroundColor: '#ffffff',
           width: 794,
           height: pageEl.scrollHeight || 1123
         });
       } finally {
         if (letterheadImg) letterheadImg.style.display = '';
+        if (metaOverlay) metaOverlay.style.display = '';
         if (footerOverlay) footerOverlay.style.display = '';
         pageEl.style.removeProperty('transform');
         pageEl.style.removeProperty('transform-origin');
       }
 
-      // ─── PHASE 2: Build paginated PDF — letterhead BEHIND content ───
+      // ─── PHASE 2: Build paginated PDF ───
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const A4_W = 210;
       const A4_H = 297;
@@ -357,7 +361,13 @@ export default function App() {
         img.src = letterheadSrc;
       });
 
-      // Slice content canvas into A4-height pages
+      // Format date as English (Arabic text cannot render in jsPDF's built-in fonts)
+      const dateStr = formData?.date
+        ? new Date(formData.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+      const refStr = formData?.refNumber || '';
+
+      // Slice content into A4-height pages
       const pxPerMm = contentCanvas.width / A4_W;
       const pageHeightPx = A4_H * pxPerMm;
       const totalPages = Math.ceil(contentCanvas.height / pageHeightPx);
@@ -365,12 +375,10 @@ export default function App() {
       for (let i = 0; i < totalPages; i++) {
         if (i > 0) pdf.addPage();
 
-        // Layer 1: Letterhead background (every page, full bleed)
+        // Layer 1: Letterhead full-bleed background (every page)
         pdf.addImage(letterheadBase64, 'JPEG', 0, 0, A4_W, A4_H);
 
-        // Layer 2: Content slice (white bg, goes on top of letterhead)
-        // Page 1 slice includes the meta-overlay Date/Ref at its fixed pixel position (131px / 61px from top).
-        // Pages 2+ slices do NOT reach the meta-overlay (it sits above their start offset).
+        // Layer 2: Body content slice on top
         const sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = contentCanvas.width;
         sliceCanvas.height = Math.min(pageHeightPx, contentCanvas.height - i * pageHeightPx);
@@ -378,12 +386,26 @@ export default function App() {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
         ctx.drawImage(contentCanvas, 0, -i * pageHeightPx);
-        // Use multiply blend: draw as PNG, letterhead shows through white areas
-        // Content slice is JPEG (opaque white bg), so letterhead header/footer areas
-        // are covered — that's why we inject letterhead first AND then use
-        // a content slice that has transparent print-header-space / print-footer-space
         const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
         pdf.addImage(sliceData, 'JPEG', 0, 0, A4_W, A4_H);
+
+        // Layer 3: Date & Ref — PAGE 1 ONLY — drawn INSIDE loop (no setPage needed)
+        // Coordinates derived by pixel-perfect measurement of the letterhead images:
+        // Petro South (1190x1683px image): Date line at x≈68%, y≈8% → 143mm, 24mm
+        // MBTKRON (791x1024px image):      Date line at x≈70%, y≈4% → 147mm, 12mm
+        if (i === 0) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(10);
+          pdf.setTextColor(30, 30, 30); // Near-black ink
+
+          if (isPetro) {
+            if (dateStr) pdf.text(dateStr, 143, 24);
+            if (refStr) pdf.text(refStr, 143, 31);
+          } else {
+            if (dateStr) pdf.text(dateStr, 147, 12);
+            if (refStr) pdf.text(refStr, 147, 18);
+          }
+        }
       }
 
       const pdfBlob = pdf.output('blob');
