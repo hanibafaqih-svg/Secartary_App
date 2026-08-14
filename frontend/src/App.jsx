@@ -294,21 +294,24 @@ export default function App() {
       const pageEl = document.querySelector('.a4-page');
       if (!pageEl) throw new Error('عنصر صفحة الوثيقة غير موجود. تأكد أن المعاينة ظاهرة على الشاشة.');
 
-      // ─── PHASE 1: Capture ONLY the body content (hide letterhead bg, meta-overlay, footer overlay) ───
+      // ─── PHASE 1: Capture ONLY body text on TRANSPARENT background ───
+      // Hide letterhead bg, meta-overlay (Date/Ref), and footer overlay.
+      // All three will be injected onto the PDF canvas directly via jsPDF.
       const letterheadImg = pageEl.querySelector('.letterhead-bg-image');
       const metaOverlay = pageEl.querySelector('.meta-overlay');
       const footerOverlay = pageEl.querySelector('.petro-footer-contact-overlay');
+      const savedBgColor = pageEl.style.backgroundColor;
 
-      // Temporarily hide static elements so html2canvas captures ONLY the text content
       if (letterheadImg) letterheadImg.style.display = 'none';
       if (metaOverlay) metaOverlay.style.display = 'none';
       if (footerOverlay) footerOverlay.style.display = 'none';
+      pageEl.style.backgroundColor = 'transparent';
 
-      // Temporarily override the CSS zoom transform so html2canvas captures at full resolution
+      // Override CSS zoom transform for accurate capture
       pageEl.style.setProperty('transform', 'scale(1)', 'important');
       pageEl.style.setProperty('transform-origin', 'top left', 'important');
 
-      // Lazy-load heavy libraries only when needed
+      // Lazy-load heavy libraries
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf')
@@ -321,31 +324,31 @@ export default function App() {
           useCORS: true,
           allowTaint: false,
           logging: false,
-          backgroundColor: null, // Transparent — we'll add letterhead separately
+          backgroundColor: null,
           width: 794,
           height: pageEl.scrollHeight || 1123
         });
       } finally {
-        // Always restore hidden elements and transform
+        // Always restore everything
         if (letterheadImg) letterheadImg.style.display = '';
         if (metaOverlay) metaOverlay.style.display = '';
         if (footerOverlay) footerOverlay.style.display = '';
+        pageEl.style.backgroundColor = savedBgColor;
         pageEl.style.removeProperty('transform');
         pageEl.style.removeProperty('transform-origin');
       }
 
-      // ─── PHASE 2: Build paginated PDF with letterhead background injection ───
+      // ─── PHASE 2: Build paginated PDF with post-pagination injection ───
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const A4_W = 210; // mm
-      const A4_H = 297; // mm
+      const A4_W = 210;
+      const A4_H = 297;
 
-      // Preload letterhead image as base64 for injection
+      // Preload letterhead as base64
       const isPetro = company === 'Petro South';
       const letterheadSrc = isPetro
         ? (await import('./assets/petro_south_letterhead.jpg')).default
         : (await import('./assets/mbtkron_letterhead.jpg')).default;
-      
-      // Convert letterhead to base64 via canvas
+
       const letterheadBase64 = await new Promise((resolve) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -360,7 +363,13 @@ export default function App() {
         img.src = letterheadSrc;
       });
 
-      // Slice content canvas into A4-height pages
+      // Prepare date/ref text for Page 1 injection
+      const dateText = formData?.date
+        ? new Date(formData.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+      const refText = formData?.refNumber || '';
+
+      // Slice content into A4-height pages
       const pxPerMm = contentCanvas.width / A4_W;
       const pageHeightPx = A4_H * pxPerMm;
       const totalPages = Math.ceil(contentCanvas.height / pageHeightPx);
@@ -368,61 +377,33 @@ export default function App() {
       for (let i = 0; i < totalPages; i++) {
         if (i > 0) pdf.addPage();
 
-        // Step A: Draw letterhead background on EVERY page (full bleed A4)
+        // Layer 1: Letterhead background (EVERY page)
         pdf.addImage(letterheadBase64, 'JPEG', 0, 0, A4_W, A4_H);
 
-        // Step B: Overlay the body content slice on top of the letterhead
+        // Layer 2: Content overlay (transparent PNG — letterhead shows through)
         const sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = contentCanvas.width;
         sliceCanvas.height = Math.min(pageHeightPx, contentCanvas.height - i * pageHeightPx);
         const ctx = sliceCanvas.getContext('2d');
-        // Don't fill white — keep transparent so letterhead shows through
         ctx.drawImage(contentCanvas, 0, -i * pageHeightPx);
-        const sliceData = sliceCanvas.toDataURL('image/png'); // PNG for transparency
+        const sliceData = sliceCanvas.toDataURL('image/png');
         pdf.addImage(sliceData, 'PNG', 0, 0, A4_W, A4_H);
-      }
 
-      // ─── PHASE 3: Draw Date & Reference on PAGE 1 ONLY using doc.text() ───
-      // These are physical A4 millimeter coordinates — resolution-independent forever
-      pdf.setPage(1);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      pdf.setTextColor(26, 35, 126); // #1A237E — dark blue ink
+        // Layer 3: Date & Reference — PAGE 1 ONLY (drawn INSIDE loop, no setPage needed)
+        if (i === 0) {
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(10);
+          pdf.setTextColor(26, 35, 126); // #1A237E
 
-      const dateText = formData?.date
-        ? new Date(formData.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
-        : '';
-      const refText = formData?.refNumber || '';
-
-      if (isPetro) {
-        // Petro South: "Date:" at ~76% from left, ~11.5% from top
-        // 76% of 210mm = 159.6mm, 11.5% of 297mm = 34.2mm
-        if (dateText) pdf.text(dateText, 164, 35);
-        if (refText) pdf.text(refText, 164, 42);
-      } else {
-        // MBTKRON: "Date:" at ~71% from left, ~5.5% from top
-        // 71% of 210mm = 149.1mm, 5.5% of 297mm = 16.3mm
-        if (dateText) pdf.text(dateText, 153, 17);
-        if (refText) pdf.text(refText, 153, 23);
-      }
-
-      // ─── PHASE 4: Also inject Petro South footer contact bar on every page ───
-      if (isPetro) {
-        for (let i = 1; i <= totalPages; i++) {
-          pdf.setPage(i);
-          // Draw dark blue footer bar
-          pdf.setFillColor(27, 35, 72); // #1B2348
-          pdf.rect(0, A4_H - 13, A4_W, 13, 'F');
-          // Orange accent line
-          pdf.setFillColor(243, 92, 51); // #f35c33
-          pdf.rect(0, A4_H - 13.8, A4_W, 0.8, 'F');
-          // Footer text
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(8);
-          pdf.setTextColor(255, 255, 255);
-          pdf.text('ops@petro-south.com', 15, A4_H - 7);
-          pdf.text('www.petro-south.com', 80, A4_H - 7);
-          pdf.text('+967 771071993 / +967 771231330', 145, A4_H - 7);
+          if (isPetro) {
+            // Petro South: "Date:" at 76% from left, 11.5% from top of A4
+            if (dateText) pdf.text(dateText, 160, 35);
+            if (refText) pdf.text(refText, 160, 41);
+          } else {
+            // MBTKRON: "Date:" at 71% from left, 5% from top of A4
+            if (dateText) pdf.text(dateText, 150, 16);
+            if (refText) pdf.text(refText, 150, 22);
+          }
         }
       }
 
