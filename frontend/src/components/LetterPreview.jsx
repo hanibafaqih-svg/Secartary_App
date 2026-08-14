@@ -532,7 +532,9 @@ const previewStyles = `
   }
 
   /* ===== Resolution-Independent Percentage Positioning for Date & Reference ===== */
-  /* Uses % of the .a4-page container (794x1123) — scales identically on every screen/DPI/PDF */
+  /* ===== FIXED PIXEL positioning — anchored to first-page height (1123px) ===== */
+  /* Using % of total container height BREAKS on multi-page docs (container grows with content). */
+  /* Fixed px values always point to the correct spot on page 1, regardless of document length. */
   .meta-overlay {
     position: absolute;
     display: flex;
@@ -544,20 +546,22 @@ const previewStyles = `
     text-align: left;
   }
   
-  /* Petro South: "Date:" at ~76% from left, ~11.5% from top on letterhead image */
+  /* Petro South: Date line at Y=196px, X=906px on 1190x1683 letterhead image.
+     Scaled to 794px-wide .a4-page: X = 906/1190 * 794 = 604px, Y = 196/1683 * 1123 = 131px */
   .petro-meta {
-    top: 11.3%;
-    left: 76%;
-    width: 20%;
-    gap: 0.8%;
+    top: 131px;
+    left: 604px;
+    width: 170px;
+    gap: 9px;
   }
   
-  /* MBTKRON Arab: "Date:" at ~71% from left, ~5% from top on letterhead image */
+  /* MBTKRON: Date line at Y=56px, X=564px on 791x1024 letterhead image.
+     Scaled to 794px-wide .a4-page: X = 564/791 * 794 = 566px, Y = 56/1024 * 1123 = 61px */
   .mbtkron-meta {
-    top: 5%;
-    left: 71%;
-    width: 24%;
-    gap: 0.6%;
+    top: 61px;
+    left: 566px;
+    width: 190px;
+    gap: 7px;
   }
 
   .meta-label {
