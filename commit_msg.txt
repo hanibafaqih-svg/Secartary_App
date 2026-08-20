@@ -1,1 +1,1 @@
-fix(pdf): calibrate exact mm coordinates for Date/Ref on letterheads (Petro South Y=32mm, MBTKRON Y=20mm) and unify handleExportPDF & handleFinalizeAndSave to use deterministic jsPDF engine
+fix(pdf): fine-tune X-axis positioning and font size for Date/Ref stamp + dynamic company margins for MBTKRON header (52mm) and footer (34mm)

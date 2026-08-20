@@ -310,10 +310,11 @@ export default function App() {
     const PAGE_H_MM = 297;
     const isPetro = company === 'Petro South';
 
-    // Physical millimeter layout margins for letterhead integration
-    const FIRST_BODY_TOP_MM = isPetro ? 55 : 46;
-    const LATER_BODY_TOP_MM = isPetro ? 42 : 38;
-    const BODY_BOTTOM_MM    = isPetro ? 24 : 20;
+    // Physical millimeter layout margins for letterhead integration:
+    // MBTKRON has taller header hanging logo (requires 52mm on page 2+) and taller footer (requires 34mm).
+    const FIRST_BODY_TOP_MM = isPetro ? 55 : 55;
+    const LATER_BODY_TOP_MM = isPetro ? 42 : 52;
+    const BODY_BOTTOM_MM    = isPetro ? 24 : 34;
 
     // Preload high-res letterhead background
     const letterheadSrc = isPetro
@@ -343,21 +344,22 @@ export default function App() {
     // High-res Date/Ref stamp generator (crisp Arabic & English rendering via 2D Canvas)
     const createMetadataStamp = () => {
       const cvs = document.createElement('canvas');
-      cvs.width = 800;
-      cvs.height = 320;
+      cvs.width = 600;
+      cvs.height = 240;
       const ctx = cvs.getContext('2d');
       ctx.clearRect(0, 0, cvs.width, cvs.height);
-      ctx.font = 'bold 36px "Cairo", "Segoe UI", Arial, sans-serif';
+      // Increased font size for higher legibility and bold official look
+      ctx.font = 'bold 42px "Cairo", "Segoe UI", Arial, sans-serif';
       ctx.fillStyle = '#1A237E'; // Official navy blue ink
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
 
       if (isPetro) {
-        if (dateStr) ctx.fillText(dateStr, 10, 58);
-        if (refStr)  ctx.fillText(refStr, 10, 185);
+        if (dateStr) ctx.fillText(dateStr, 0, 60);
+        if (refStr)  ctx.fillText(refStr, 0, 185);
       } else {
-        if (dateStr) ctx.fillText(dateStr, 10, 58);
-        if (refStr)  ctx.fillText(refStr, 10, 175);
+        if (dateStr) ctx.fillText(dateStr, 0, 58);
+        if (refStr)  ctx.fillText(refStr, 0, 175);
       }
       return cvs.toDataURL('image/png');
     };
@@ -409,14 +411,14 @@ export default function App() {
         doc.text('+967 771071993 / +967 771231330', 145, PAGE_H_MM - 5);
       }
 
-      // Layer 3: Date & Reference metadata — PAGE 1 ONLY at exact physical mm coordinates:
-      // Petro South: Date line at Y=32mm, Ref line at Y=39mm. (Stamp at Y=28.5mm, X=158mm)
-      // MBTKRON: Date line at Y=20mm, Ref line at Y=26mm. (Stamp at Y=16.0mm, X=148mm)
+      // Layer 3: Date & Reference metadata — PAGE 1 ONLY at exact calibrated coordinates:
+      // Petro South: Shifted to X=171.5mm to sit directly on the line next to "Date:" / "Ref. No:"
+      // MBTKRON: Shifted to X=162.0mm to sit directly on the gold line next to "Date:" / "Ref. No:"
       if (pageIndex === 0) {
         if (isPetro) {
-          doc.addImage(metaStampDataUrl, 'PNG', 158, 28.5, 42, 16, undefined, 'FAST');
+          doc.addImage(metaStampDataUrl, 'PNG', 171.5, 29.0, 26, 13, undefined, 'FAST');
         } else {
-          doc.addImage(metaStampDataUrl, 'PNG', 148, 16.0, 48, 16, undefined, 'FAST');
+          doc.addImage(metaStampDataUrl, 'PNG', 162.0, 13.5, 28, 13, undefined, 'FAST');
         }
       }
 

@@ -546,22 +546,20 @@ const previewStyles = `
     text-align: left;
   }
   
-  /* Petro South: Date line at Y=196px, X=906px on 1190x1683 letterhead image.
-     Scaled to 794px-wide .a4-page: X = 906/1190 * 794 = 604px, Y = 196/1683 * 1123 = 131px */
+  /* Petro South: Date line to the right of "Date:" label */
   .petro-meta {
-    top: 131px;
-    left: 604px;
-    width: 170px;
-    gap: 9px;
+    top: 121px;
+    left: 648px;
+    width: 125px;
+    gap: 7px;
   }
   
-  /* MBTKRON: Date line at Y=56px, X=564px on 791x1024 letterhead image.
-     Scaled to 794px-wide .a4-page: X = 564/791 * 794 = 566px, Y = 56/1024 * 1123 = 61px */
+  /* MBTKRON: Date line to the right of "Date:" label */
   .mbtkron-meta {
-    top: 61px;
-    left: 566px;
-    width: 190px;
-    gap: 7px;
+    top: 52px;
+    left: 615px;
+    width: 145px;
+    gap: 6px;
   }
 
   .meta-label {
