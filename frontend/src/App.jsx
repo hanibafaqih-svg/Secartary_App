@@ -232,6 +232,16 @@ export default function App() {
     });
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   const handleExportPDF = async () => {
     try {
       let documentSubject = '';
@@ -288,61 +298,83 @@ export default function App() {
     setIsFinalizing(true);
     setFinalizeResult(null);
     try {
-      // Wait for fonts to be ready
-      await document.fonts.ready;
+      // Wait for all fonts (Cairo, etc.) to be fully loaded
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
 
-      const pageEl = document.querySelector('.a4-page');
-      if (!pageEl) throw new Error('عنصر صفحة الوثيقة غير موجود. تأكد أن المعاينة ظاهرة على الشاشة.');
+      // Find the source content container (.letter-content or .quotation-content or .print-content)
+      const sourceContent = document.querySelector('.letter-content') ||
+                            document.querySelector('.quotation-content') ||
+                            document.querySelector('.print-content');
+      if (!sourceContent) {
+        throw new Error('عنصر محتوى الوثيقة غير موجود. تأكد أن المعاينة ظاهرة على الشاشة.');
+      }
 
-      // ─── PHASE 1: Capture ONLY body text ───
-      // Hide the letterhead bg, the meta-overlay Date/Ref, and the footer overlay.
-      // Date/Ref will be drawn by jsPDF doc.text() at exact physical mm coords.
-      // This is the ONLY reliable approach — html2canvas absolute positioning
-      // does not guarantee pixel-perfect placement in the output canvas.
-      const letterheadImg = pageEl.querySelector('.letterhead-bg-image');
-      const metaOverlay = pageEl.querySelector('.meta-overlay');
-      const footerOverlay = pageEl.querySelector('.petro-footer-contact-overlay');
+      // ─── STEP 1: Dedicated Canonical Export Container (#pdf-export-body) ───
+      // As specified in Option C of the architectural brief:
+      // We isolate ONLY the fluid body content into a fixed 794px container offscreen.
+      // This completely decouples body flow from letterhead artwork and Date/Ref metadata.
+      const EXPORT_WIDTH_CSS_PX = 794;
+      const exportContainer = document.createElement('div');
+      exportContainer.id = 'pdf-export-body';
+      exportContainer.style.position = 'fixed';
+      exportContainer.style.left = '-100000px';
+      exportContainer.style.top = '0';
+      exportContainer.style.width = `${EXPORT_WIDTH_CSS_PX}px`;
+      exportContainer.style.boxSizing = 'border-box';
+      exportContainer.style.padding = mode === 'quotation' ? '0 50px' : '0 75px';
+      exportContainer.style.background = 'transparent';
+      exportContainer.style.direction = 'rtl';
+      exportContainer.style.color = '#2b2b2b';
+      exportContainer.style.fontFamily = "'Cairo', 'Segoe UI', Arial, sans-serif";
 
-      if (letterheadImg) letterheadImg.style.display = 'none';
-      if (metaOverlay) metaOverlay.style.display = 'none';
-      if (footerOverlay) footerOverlay.style.display = 'none';
-      pageEl.style.setProperty('transform', 'scale(1)', 'important');
-      pageEl.style.setProperty('transform-origin', 'top left', 'important');
+      // Clone content cleanly
+      const contentClone = sourceContent.cloneNode(true);
+      contentClone.style.padding = '0';
+      contentClone.style.margin = '0';
+      contentClone.style.background = 'transparent';
+      exportContainer.appendChild(contentClone);
+      document.body.appendChild(exportContainer);
 
-      // Wait 2 frames to ensure browser re-renders before capture
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-      // Lazy-load heavy libraries
+      // Lazy-load heavy libraries only when needed
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf')
       ]);
 
-      let contentCanvas;
+      let bodyCanvas;
       try {
-        contentCanvas = await html2canvas(pageEl, {
-          scale: 2,
+        // Wait 2 animation frames for layout rendering
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        bodyCanvas = await html2canvas(exportContainer, {
+          width: EXPORT_WIDTH_CSS_PX,
+          windowWidth: EXPORT_WIDTH_CSS_PX,
+          scale: 2, // 300 DPI equivalent
+          backgroundColor: null, // Transparent PNG
           useCORS: true,
           allowTaint: false,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: 794,
-          height: pageEl.scrollHeight || 1123
+          logging: false
         });
       } finally {
-        if (letterheadImg) letterheadImg.style.display = '';
-        if (metaOverlay) metaOverlay.style.display = '';
-        if (footerOverlay) footerOverlay.style.display = '';
-        pageEl.style.removeProperty('transform');
-        pageEl.style.removeProperty('transform-origin');
+        // Clean up DOM clone
+        if (document.body.contains(exportContainer)) {
+          document.body.removeChild(exportContainer);
+        }
       }
 
-      // ─── PHASE 2: Build paginated PDF ───
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const A4_W = 210;
-      const A4_H = 297;
-
+      // ─── STEP 2: Deterministic jsPDF Compositor (Option C) ───
+      const PAGE_W_MM = 210;
+      const PAGE_H_MM = 297;
       const isPetro = company === 'Petro South';
+
+      // Physical millimeter layout margins for letterhead integration
+      const FIRST_BODY_TOP_MM = isPetro ? 55 : 48;
+      const LATER_BODY_TOP_MM = isPetro ? 42 : 38;
+      const BODY_BOTTOM_MM    = isPetro ? 24 : 20;
+
+      // Preload high-res letterhead background
       const letterheadSrc = isPetro
         ? (await import('./assets/petro_south_letterhead.jpg')).default
         : (await import('./assets/mbtkron_letterhead.jpg')).default;
@@ -356,59 +388,131 @@ export default function App() {
           cvs.height = img.naturalHeight;
           const ctx = cvs.getContext('2d');
           ctx.drawImage(img, 0, 0);
-          resolve(cvs.toDataURL('image/jpeg', 0.92));
+          resolve(cvs.toDataURL('image/jpeg', 0.95));
         };
         img.src = letterheadSrc;
       });
 
-      // Format date as English (Arabic text cannot render in jsPDF's built-in fonts)
+      // Prepare Date & Ref strings
       const dateStr = formData?.date
-        ? new Date(formData.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        ? (formatDate ? formatDate(formData.date) : new Date(formData.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }))
         : '';
       const refStr = formData?.refNumber || '';
 
-      // Slice content into A4-height pages
-      const pxPerMm = contentCanvas.width / A4_W;
-      const pageHeightPx = A4_H * pxPerMm;
-      const totalPages = Math.ceil(contentCanvas.height / pageHeightPx);
+      // High-res Date/Ref stamp generator (crisp Arabic & English rendering via 2D Canvas)
+      const createMetadataStamp = () => {
+        const cvs = document.createElement('canvas');
+        cvs.width = 800;
+        cvs.height = 320;
+        const ctx = cvs.getContext('2d');
+        ctx.clearRect(0, 0, cvs.width, cvs.height);
+        ctx.font = 'bold 36px "Cairo", "Segoe UI", Arial, sans-serif';
+        ctx.fillStyle = '#1A237E'; // Official navy blue ink
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
 
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) pdf.addPage();
+        if (isPetro) {
+          if (dateStr) ctx.fillText(dateStr, 10, 65);
+          if (refStr)  ctx.fillText(refStr, 10, 190);
+        } else {
+          if (dateStr) ctx.fillText(dateStr, 10, 65);
+          if (refStr)  ctx.fillText(refStr, 10, 185);
+        }
+        return cvs.toDataURL('image/png');
+      };
 
-        // Layer 1: Letterhead full-bleed background (every page)
-        pdf.addImage(letterheadBase64, 'JPEG', 0, 0, A4_W, A4_H);
+      const metaStampDataUrl = createMetadataStamp();
 
-        // Layer 2: Body content slice on top
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = contentCanvas.width;
-        sliceCanvas.height = Math.min(pageHeightPx, contentCanvas.height - i * pageHeightPx);
-        const ctx = sliceCanvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-        ctx.drawImage(contentCanvas, 0, -i * pageHeightPx);
-        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(sliceData, 'JPEG', 0, 0, A4_W, A4_H);
+      // Initialize A4 PDF
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
 
-        // Layer 3: Date & Ref — PAGE 1 ONLY — drawn INSIDE loop (no setPage needed)
-        // Coordinates derived by pixel-perfect measurement of the letterhead images:
-        // Petro South (1190x1683px image): Date line at x≈68%, y≈8% → 143mm, 24mm
-        // MBTKRON (791x1024px image):      Date line at x≈70%, y≈4% → 147mm, 12mm
-        if (i === 0) {
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setTextColor(30, 30, 30); // Near-black ink
+      // Map canvas pixels to physical mm
+      const mmPerCanvasPixel = PAGE_W_MM / bodyCanvas.width;
+      let sourceY = 0;
+      let pageIndex = 0;
 
+      // Slice fluid body into available page rectangles
+      do {
+        const bodyTopMm = pageIndex === 0 ? FIRST_BODY_TOP_MM : LATER_BODY_TOP_MM;
+        const availableBodyHeightMm = PAGE_H_MM - bodyTopMm - BODY_BOTTOM_MM;
+        const availableBodyHeightPx = Math.floor(availableBodyHeightMm / mmPerCanvasPixel);
+        const remainingHeightPx = bodyCanvas.height - sourceY;
+        const sliceHeightPx = Math.min(
+          Math.max(1, availableBodyHeightPx),
+          Math.max(1, remainingHeightPx)
+        );
+
+        if (pageIndex > 0) {
+          doc.addPage('a4', 'portrait');
+        }
+
+        // Layer 1: Official letterhead background (on EVERY page)
+        doc.addImage(letterheadBase64, 'JPEG', 0, 0, PAGE_W_MM, PAGE_H_MM);
+
+        // Layer 2 (Petro South): Vector footer contact bar (on EVERY page)
+        if (isPetro) {
+          doc.setFillColor(27, 35, 72); // #1B2348
+          doc.rect(0, PAGE_H_MM - 12, PAGE_W_MM, 12, 'F');
+          doc.setFillColor(243, 92, 51); // #f35c33 accent
+          doc.rect(0, PAGE_H_MM - 12.6, PAGE_W_MM, 0.6, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(255, 255, 255);
+          doc.text('ops@petro-south.com', 15, PAGE_H_MM - 5);
+          doc.text('www.petro-south.com', 85, PAGE_H_MM - 5);
+          doc.text('+967 771071993 / +967 771231330', 145, PAGE_H_MM - 5);
+        }
+
+        // Layer 3: Date & Reference metadata — PAGE 1 ONLY
+        if (pageIndex === 0) {
           if (isPetro) {
-            if (dateStr) pdf.text(dateStr, 143, 24);
-            if (refStr) pdf.text(refStr, 143, 31);
+            // Petro South: Date line at Y≈34mm, Ref line at Y≈41mm, X starts at 158mm
+            doc.addImage(metaStampDataUrl, 'PNG', 158, 29.5, 42, 16, undefined, 'FAST');
           } else {
-            if (dateStr) pdf.text(dateStr, 147, 12);
-            if (refStr) pdf.text(refStr, 147, 18);
+            // MBTKRON Arab: Date line at Y≈16mm, Ref line at Y≈22mm, X starts at 148mm
+            doc.addImage(metaStampDataUrl, 'PNG', 148, 11, 48, 16, undefined, 'FAST');
           }
         }
-      }
 
-      const pdfBlob = pdf.output('blob');
+        // Layer 4: Transparent Fluid Body Slice
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = bodyCanvas.width;
+        sliceCanvas.height = Math.max(1, Math.floor(sliceHeightPx));
+        const sCtx = sliceCanvas.getContext('2d');
+        sCtx.drawImage(
+          bodyCanvas,
+          0,
+          sourceY,
+          bodyCanvas.width,
+          sliceCanvas.height,
+          0,
+          0,
+          bodyCanvas.width,
+          sliceCanvas.height
+        );
+
+        const sliceHeightMm = sliceCanvas.height * mmPerCanvasPixel;
+        doc.addImage(
+          sliceCanvas.toDataURL('image/png'),
+          'PNG',
+          0,
+          bodyTopMm,
+          PAGE_W_MM,
+          sliceHeightMm,
+          undefined,
+          'FAST'
+        );
+
+        sourceY += sliceHeightPx;
+        pageIndex += 1;
+      } while (sourceY < bodyCanvas.height);
+
+      const pdfBlob = doc.output('blob');
 
       // Determine the client / subject label for the filename: [Reference Number] - [Subject].pdf
       let documentSubject = '';

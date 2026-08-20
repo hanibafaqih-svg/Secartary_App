@@ -1,7 +1,1 @@
-feat(phase-2): architectural pivot - post-pagination canvas injection for PDF generation
-
-Completely decoupled content flow from static canvas elements:
-- PHASE 1: Capture ONLY body text (hide letterhead/meta during html2canvas)
-- PHASE 2: Inject letterhead background on EVERY page via doc.addImage()
-- PHASE 3: Draw Date/Ref on PAGE 1 ONLY using doc.text() in physical mm
-- PHASE 4: Draw Petro South footer contact bar on every page
+feat(pdf): implement Option C deterministic jsPDF compositor with dedicated body export and page-1 metadata stamp
