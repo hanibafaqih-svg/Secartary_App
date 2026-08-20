@@ -1,1 +1,1 @@
-fix(pdf): fine-tune X-axis positioning and font size for Date/Ref stamp + dynamic company margins for MBTKRON header (52mm) and footer (34mm)
+fix(pdf): expand protective slicing margins (BODY_BOTTOM_MM=35-40mm, LATER_BODY_TOP_MM=60-65mm) for complete header and footer clearance across all pages

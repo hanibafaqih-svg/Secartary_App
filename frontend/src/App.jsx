@@ -311,10 +311,10 @@ export default function App() {
     const isPetro = company === 'Petro South';
 
     // Physical millimeter layout margins for letterhead integration:
-    // MBTKRON has taller header hanging logo (requires 52mm on page 2+) and taller footer (requires 34mm).
-    const FIRST_BODY_TOP_MM = isPetro ? 55 : 55;
-    const LATER_BODY_TOP_MM = isPetro ? 42 : 52;
-    const BODY_BOTTOM_MM    = isPetro ? 24 : 34;
+    // Generous protective margins to guarantee zero overlap with headers or footers across all pages
+    const FIRST_BODY_TOP_MM = isPetro ? 58 : 58;
+    const LATER_BODY_TOP_MM = isPetro ? 60 : 65; // High clearance for Page 2+ header graphics
+    const BODY_BOTTOM_MM    = isPetro ? 35 : 40; // High clearance so text stops well above footer bars on all pages
 
     // Preload high-res letterhead background
     const letterheadSrc = isPetro
