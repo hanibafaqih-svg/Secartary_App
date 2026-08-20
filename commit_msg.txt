@@ -1,1 +1,1 @@
-feat(pdf): implement Option C deterministic jsPDF compositor with dedicated body export and page-1 metadata stamp
+fix(pdf): calibrate exact mm coordinates for Date/Ref on letterheads (Petro South Y=32mm, MBTKRON Y=20mm) and unify handleExportPDF & handleFinalizeAndSave to use deterministic jsPDF engine
