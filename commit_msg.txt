@@ -1,1 +1,1 @@
-fix(pdf): expand protective slicing margins (BODY_BOTTOM_MM=35-40mm, LATER_BODY_TOP_MM=60-65mm) for complete header and footer clearance across all pages
+fix(pdf): adjust Petro South protective margins (BODY_BOTTOM_MM=38mm, LATER_BODY_TOP_MM=55mm) for clean header/footer clearance

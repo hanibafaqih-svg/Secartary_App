@@ -313,8 +313,8 @@ export default function App() {
     // Physical millimeter layout margins for letterhead integration:
     // Generous protective margins to guarantee zero overlap with headers or footers across all pages
     const FIRST_BODY_TOP_MM = isPetro ? 58 : 58;
-    const LATER_BODY_TOP_MM = isPetro ? 60 : 65; // High clearance for Page 2+ header graphics
-    const BODY_BOTTOM_MM    = isPetro ? 35 : 40; // High clearance so text stops well above footer bars on all pages
+    const LATER_BODY_TOP_MM = isPetro ? 55 : 65; // High clearance for Page 2+ header graphics (Petro: 55mm, MBTKRON: 65mm)
+    const BODY_BOTTOM_MM    = isPetro ? 38 : 40; // High clearance so text stops well above footer bars on all pages (Petro: 38mm, MBTKRON: 40mm)
 
     // Preload high-res letterhead background
     const letterheadSrc = isPetro
